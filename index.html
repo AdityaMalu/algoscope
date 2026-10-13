@@ -273,7 +273,46 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
 .edgebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;background:var(--warn-bg);color:var(--warn);font-size:13px;border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
 .edgebar .btn{margin-left:auto;padding:3px 9px;font-size:12.5px}
 
+/* home */
+.brand-link{color:inherit;text-decoration:none;border-radius:8px}
+.brand-link:hover h1{color:var(--accent)}
+.home{display:flex;flex-direction:column;gap:22px}
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:center;padding-block:18px 6px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h2{font-family:var(--f-display);font-size:clamp(28px,4.2vw,44px);line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.hero p.lead{font-size:16px;color:var(--ink-2);max-width:56ch;margin:14px 0 0}
+.hero .row{margin-top:20px}
+.hero .btn{text-decoration:none;display:inline-flex;align-items:center}
+.facts{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:18px;font-size:13px;color:var(--ink-3)}
+.facts b{color:var(--ink);font-variant-numeric:tabular-nums}
+.demo{background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:22px 22px;border:1px solid var(--line);border-radius:var(--r);padding:18px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.demo .ds{overflow-x:auto}
+.demo-cap{font-size:13px;color:var(--ink-2);margin:0}
+.demo-cap code{background:var(--sunk);padding:1px 5px;border-radius:4px}
+.continue{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--accent-soft);border-radius:var(--r);padding:12px 16px;text-decoration:none;color:var(--ink)}
+.continue:hover{filter:brightness(.98)}
+.continue .k{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
+.continue b{font-family:var(--f-display);font-size:17px}
+.continue .go{margin-left:auto;color:var(--accent);font-weight:600;font-size:14px}
+.home-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.home-tools input{flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--surface);font-size:14px}
+.home-tools .progress{font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;align-items:start}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 6px 8px;min-width:0}
+.tcard h3{font-family:var(--f-display);font-size:16px;margin:0;padding:0 10px}
+.tmeta{display:flex;align-items:center;gap:8px;padding:4px 10px 8px;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.tbar{flex:1;height:4px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.tbar i{display:block;height:100%;background:var(--m-done);border-radius:99px}
+.prow{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;text-decoration:none;color:var(--ink);font-size:14px}
+.prow:hover{background:var(--sunk)}
+.prow .t{flex:1;min-width:0}
+.prow .tick{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center}
+.prow.seen .tick{background:var(--m-done);border-color:var(--m-done)}
+.prow.seen .tick::after{content:"";width:7px;height:4px;border:solid var(--surface);border-width:0 0 2px 2px;transform:rotate(-45deg) translate(1px,-1px)}
+.libbar .home-btn{font-weight:600}
+
 @media (max-width:980px){
+  .hero{grid-template-columns:minmax(0,1fr)}
   .work,.report,.overview{grid-template-columns:minmax(0,1fr)}
   .codebox{height:340px}
 }
@@ -291,14 +330,15 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="brand">
+    <a class="brand brand-link" href="#home" aria-label="AlgoScope home">
       <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" fill="var(--accent)"/><circle cx="11" cy="21" r="3.2" fill="var(--accent-ink)"/><circle cx="23" cy="21" r="3.2" fill="var(--accent-ink)"/><circle cx="17" cy="11" r="3.2" fill="var(--m-active)"/><path d="M15.3 13.6 12.6 18.4M18.7 13.6l2.7 4.8" stroke="var(--accent-ink)" stroke-width="1.8"/></svg>
-      <div><h1>AlgoScope</h1><p>Paste code in any language. Watch it run, step by step, and see where it breaks.</p></div>
-    </div>
+      <div><h1>AlgoScope</h1><p>Watch algorithms run, step by step, and see where they break.</p></div>
+    </a>
     <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Checking AI access…</span><button class="btn" id="aiOpen" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM6.9 1h2.2l.4 1.9 1.4.6 1.6-1.1 1.6 1.6-1.1 1.6.6 1.4 1.9.4v2.2l-1.9.4-.6 1.4 1.1 1.6-1.6 1.6-1.6-1.1-1.4.6-.4 1.9H6.9l-.4-1.9-1.4-.6-1.6 1.1-1.6-1.6 1.1-1.6-.6-1.4L.5 9.1V6.9l1.9-.4.6-1.4-1.1-1.6 1.6-1.6 1.6 1.1 1.4-.6z"/></svg>AI settings</button></div>
   </header>
 
   <nav class="libbar" id="libbar" hidden>
+    <a class="btn home-btn" href="#home">← All problems</a>
     <button class="btn" id="libOpen" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12v2H2zM2 7h12v2H2zM2 11h12v2H2z"/></svg>Problem sheet <span id="libCount" class="hint"></span></button>
     <div class="curprob" id="curProb"></div>
     <button class="ic" id="probPrev" type="button" aria-label="Previous problem"><svg viewBox="0 0 16 16"><path d="M11 2v12L3 8z"/></svg></button>
@@ -347,6 +387,35 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
     </div>
   </div>
 
+  <section class="home" id="homeView" hidden>
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Interview prep · Java, Python, C++</p>
+        <h2>See every line of the algorithm run.</h2>
+        <p class="lead">Pick a problem and step through it. Arrays, pointers, trees, graphs and DP tables change on screen as the code runs, with the complexity, the key idea, common pitfalls and edge cases you can trace too.</p>
+        <div class="row"><a class="btn primary" id="heroStart" href="#two-sum">Start with Two Sum</a><a class="btn" href="#code">Trace your own code</a></div>
+        <div class="facts"><span><b id="factCount">159</b> problems</span><span><b id="factTopics">23</b> topics</span><span><b>3</b> languages</span><span>No sign-up or key needed</span></div>
+      </div>
+      <div class="demo" aria-label="Example: binary search narrowing its window">
+        <div id="demoStrip"></div>
+        <p class="demo-cap" id="demoCap"></p>
+      </div>
+    </div>
+    <a class="continue" id="homeContinue" href="#home" hidden><span class="k">Continue</span><b id="contTitle"></b><span class="hint" id="contTopic"></span><span class="go">Open →</span></a>
+    <div class="home-tools">
+      <input id="homeSearch" type="search" placeholder="Search problems or topics" aria-label="Search problems">
+      <div class="levels" id="homeLevels" style="border:0;padding:0">
+        <button type="button" class="chip" data-l="all" aria-pressed="true">All</button>
+        <button type="button" class="chip" data-l="easy" aria-pressed="false">Easy</button>
+        <button type="button" class="chip" data-l="medium" aria-pressed="false">Medium</button>
+        <button type="button" class="chip" data-l="hard" aria-pressed="false">Hard</button>
+      </div>
+      <span class="progress" id="homeProgress"></span>
+    </div>
+    <div class="topics" id="homeTopics"></div>
+  </section>
+
+  <div id="appView" hidden>
   <section class="overview" id="overview" aria-live="polite"></section>
 
   <main class="work">
@@ -445,6 +514,7 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
       </div>
     </div>
   </section>
+  </div>
 </div>
 
 <script>
@@ -1263,7 +1333,8 @@ async function analyze(){
         overlaySub(`${Math.round((Date.now() - t0) / 1000)} s`); }
     });
     S.analysis = normalize(raw, code, $("lang").value);
-    S.base = null; S.edge = null; LIB.cur = null; S.step = 0; layoutCache.clear(); overlay(false); renderAll(); save();
+    S.base = null; S.edge = null; LIB.cur = null; S.step = 0; layoutCache.clear(); overlay(false); CUSTOM = S.analysis; renderAll(); save();
+    if (location.hash !== "#code") { try { history.replaceState(null, "", "#code"); } catch {} }
   } catch (e) {
     overlay(false);
     if (!(e && e.code === "cancelled")) showErr(errText(e));
@@ -1346,7 +1417,6 @@ async function loadIndex(){
   try { const r = await fetch("data/index.json"); if (!r.ok) return false; LIB.index = await r.json(); }
   catch { return false; }
   if (!Array.isArray(LIB.index) || !libItems().length) return false;
-  $("libbar").hidden = false;
   $("libCount").textContent = libItems().length === LIB.index.length ? `· ${LIB.index.length}` : `· ${libItems().length} of ${LIB.index.length}`;
   return true;
 }
@@ -1358,6 +1428,7 @@ async function openProblem(id){
   const p = LIB.files[e.file].find(x => x.id === id); if (!p) return false;
   stopPlay(); showErr("");
   LIB.cur = p;
+  markViewed(p.id);
   S.base = {...p, library: true, intuition: p.intuition || [], pitfalls: p.pitfalls || [], edgeCases: p.edgeCases || []};
   S.edge = null; S.analysis = libView(); S.step = 0; layoutCache.clear();
   ed.value = S.analysis.code; $("lang").value = S.lang; $("inputBox").value = "";
@@ -1385,7 +1456,7 @@ function renderLibList(){
   $("libList").innerHTML = groups.length ? groups.map(g => `<div class="lt">${esc(g.topic)}<span>${g.items.filter(x => x.file).length}/${g.items.length}</span></div>` + g.items.map(x =>
     `<button type="button" class="li" data-id="${esc(x.id)}"${x.id === cur ? ' aria-current="true"' : ""}${x.file ? "" : " disabled"}><span class="t">${esc(x.title)}</span>${x.file ? "" : '<span class="hint">not built yet</span>'}<span class="lvl ${esc(x.level)}">${esc(x.level)}</span></button>`).join("")).join("")
     : `<p class="hint" style="padding:14px">No problems match.</p>`;
-  $("libList").querySelectorAll(".li[data-id]:not([disabled])").forEach(b => b.onclick = async () => { closeLib(); await openProblem(b.dataset.id); });
+  $("libList").querySelectorAll(".li[data-id]:not([disabled])").forEach(b => b.onclick = () => { closeLib(); nav(b.dataset.id); });
 }
 function openLib(){ $("drawer").hidden = false; renderLibList(); $("libSearch").focus(); const c = $("libList").querySelector('[aria-current="true"]'); if (c) c.scrollIntoView({block: "center"}); }
 function closeLib(){ $("drawer").hidden = true; $("libOpen").focus(); }
@@ -1397,10 +1468,83 @@ $("libSearch").addEventListener("input", renderLibList);
 $("levels").querySelectorAll(".chip").forEach(c => c.onclick = () => {
   LIB.level = c.dataset.l; $("levels").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); renderLibList();
 });
-function stepProblem(d){ const items = libItems(), i = items.findIndex(x => LIB.cur && x.id === LIB.cur.id); const n = items[i + d]; if (n) openProblem(n.id); }
+function stepProblem(d){ const items = libItems(), i = items.findIndex(x => LIB.cur && x.id === LIB.cur.id); const n = items[i + d]; if (n) nav(n.id); }
 $("probPrev").onclick = () => stepProblem(-1);
 $("probNext").onclick = () => stepProblem(1);
-window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if (id && LIB.index) openProblem(id); });
+
+/* ---------- home page and routing: #home (default), #code (your own code), #<problem-id> ---------- */
+const viewed = {
+  get(){ try { return new Set(JSON.parse(localStorage.getItem("algoscope:viewed") || "[]")); } catch { return new Set(); } },
+  add(id){ try { const v = viewed.get(); v.add(id); localStorage.setItem("algoscope:viewed", JSON.stringify([...v])); } catch {} }
+};
+function markViewed(id){ viewed.add(id); }
+let CUSTOM = null;
+const HOME = { level: "all" };
+function nav(hash){ if (location.hash.slice(1) === hash) route(); else location.hash = hash; }
+function showView(home){
+  $("homeView").hidden = !home; $("appView").hidden = home;
+  $("libbar").hidden = home || !LIB.index;
+  if (home) stopPlay();
+  window.scrollTo(0, 0);
+}
+async function route(){
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (id === "code"){ showCode(); return; }
+  if (id && id !== "home" && LIB.index && await openProblem(id)){ showView(false); document.title = (LIB.cur ? LIB.cur.title + " · " : "") + "AlgoScope"; return; }
+  renderHome(); showView(true); document.title = "AlgoScope";
+}
+function showCode(){
+  S.base = null; S.edge = null; LIB.cur = null; S.step = 0; layoutCache.clear();
+  if (CUSTOM){ S.analysis = CUSTOM; ed.value = CUSTOM.code; }
+  else { S.analysis = {...DEMO, code: DEMO_CODE}; if (!ed.value.trim() || LIB.index) ed.value = DEMO_CODE; }
+  showView(false); renderAll(); setMode("edit"); document.title = "Your code · AlgoScope";
+  showErr("Paste your code and press Visualize. The example below shows what you'll get.", true);
+  ed.focus();
+}
+function renderHome(){
+  if (!LIB.index) return;
+  const seen = viewed.get(), q = $("homeSearch").value.trim().toLowerCase(), lv = HOME.level;
+  const items = libItems(), topics = [];
+  for (const x of items){ let t = topics.find(t => t.name === x.topic); if (!t){ t = {name: x.topic, all: [], shown: []}; topics.push(t); } t.all.push(x);
+    if ((lv === "all" || x.level === lv) && (!q || x.title.toLowerCase().includes(q) || x.topic.toLowerCase().includes(q))) t.shown.push(x); }
+  $("factCount").textContent = items.length; $("factTopics").textContent = topics.length;
+  const done = items.filter(x => seen.has(x.id)).length;
+  $("homeProgress").textContent = done ? `${done} of ${items.length} viewed` : `${items.length} problems`;
+  const vis = topics.filter(t => t.shown.length);
+  $("homeTopics").innerHTML = vis.length ? vis.map(t => {
+    const d = t.all.filter(x => seen.has(x.id)).length;
+    return `<div class="tcard"><h3>${esc(t.name)}</h3><div class="tmeta"><span>${d}/${t.all.length}</span><span class="tbar"><i style="width:${Math.round(d / t.all.length * 100)}%"></i></span></div>` +
+      t.shown.map(x => `<a class="prow${seen.has(x.id) ? " seen" : ""}" href="#${esc(x.id)}"><span class="tick" aria-hidden="true"></span><span class="t">${esc(x.title)}</span><span class="lvl ${esc(x.level)}">${esc(x.level)}</span></a>`).join("") + `</div>`;
+  }).join("") : `<p class="hint">No problems match.</p>`;
+  const last = store.get(), lastId = last && last.libId, li = lastId && items.find(x => x.id === lastId);
+  $("homeContinue").hidden = !li;
+  if (li){ $("homeContinue").href = "#" + li.id; $("contTitle").textContent = li.title; $("contTopic").textContent = li.topic; }
+  const first = items.find(x => !seen.has(x.id)) || items[0];
+  $("heroStart").href = "#" + first.id; $("heroStart").textContent = seen.size ? "Next unviewed: " + first.title : "Start with " + first.title;
+}
+$("homeSearch").addEventListener("input", renderHome);
+$("homeLevels").querySelectorAll(".chip").forEach(c => c.onclick = () => {
+  HOME.level = c.dataset.l; $("homeLevels").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); renderHome();
+});
+/* hero illustration: binary search for 23 narrowing its window */
+(function demo(){
+  const A = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91];
+  const frames = [
+    [0, 9, 4, "Check the middle: 16 < 23, so the answer is to the right."],
+    [5, 9, 7, "Middle of what's left: 56 > 23, so go left."],
+    [5, 6, 5, "23 found at index 5 after 3 checks."]
+  ];
+  let k = 0;
+  const draw = () => {
+    const [lo, hi, mid, cap] = frames[k], last = k === frames.length - 1;
+    const marks = {}; A.forEach((_, i) => { if (i < lo || i > hi) marks[i] = "dim"; }); marks[mid] = last ? "found" : "compare";
+    $("demoStrip").innerHTML = renderStructure({kind: "array", name: "arr", values: A, pointers: {lo, hi, mid}, marks});
+    $("demoCap").innerHTML = inline("`target = 23` · " + cap);
+    k = (k + 1) % frames.length;
+  };
+  draw();
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { if (!$("homeView").hidden) draw(); }, 2200);
+})();
 $("edgeBack").onclick = () => { if (S.base){ stopPlay(); S.edge = null; S.analysis = libView(); S.step = 0; renderAll(); } };
 
 /* ---------- boot ---------- */
@@ -1409,18 +1553,11 @@ const DEMO_CODE = EXAMPLES["Binary search · Python"].code;
   const saved = store.get();
   if (saved && LIB_LANGS.includes(saved.libLang)) S.lang = saved.libLang;
   if (saved){ if (saved.lang) $("lang").value = saved.lang; if (saved.input) $("inputBox").value = saved.input; if (saved.tier) $("tier").value = saved.tier; }
-  const customSaved = saved && saved.analysis && saved.analysis.steps && saved.analysis.steps.length;
+  if (saved && saved.analysis && saved.analysis.steps && saved.analysis.steps.length){ CUSTOM = saved.analysis; ed.value = saved.code || CUSTOM.code; }
   const haveLib = await loadIndex();
-  if (haveLib && !customSaved){
-    const first = libItems()[0].id;
-    const hashId = location.hash.slice(1);
-    if (hashId && await openProblem(hashId)) return;
-    if (await openProblem((saved && saved.libId) || first)) return;
-    if (await openProblem(first)) return;
-  }
-  if (customSaved){ ed.value = saved.code || saved.analysis.code; S.analysis = saved.analysis; }
-  else { ed.value = (saved && saved.code) || DEMO_CODE; S.analysis = {...DEMO, code: DEMO_CODE}; }
-  renderAll();
+  if (!haveLib){ ed.value = ed.value || DEMO_CODE; S.analysis = CUSTOM || {...DEMO, code: DEMO_CODE}; $("homeView").hidden = true; $("appView").hidden = false; renderAll(); return; }
+  await route();
+  window.addEventListener("hashchange", route);
 })();
 })();
 </script>
