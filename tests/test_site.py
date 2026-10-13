@@ -123,3 +123,44 @@ def test_ai_badge_shown(page, site):
     page.reload()
     expect(page.locator("#overview .pill.warn")).to_contain_text("AI-generated")
     expect(page.locator("#overview")).to_contain_text("2 steps pointed at a line")
+
+
+PY_CODE = """def two_sum(nums, target):
+    seen = {}
+    for i, x in enumerate(nums):
+        if target - x in seen:
+            return [seen[target - x], i]
+        seen[x] = i
+    return []
+"""
+
+
+def test_python_runs_for_real(app):
+    """Pasted Python is executed with Pyodide; no AI key is needed."""
+    app.goto(app.url.split("#")[0] + "#code")
+    app.wait_for_selector("#editor", state="visible")
+    app.fill("#editor", PY_CODE)
+    app.fill("#inputBox", "[2, 7, 11, 15], 9")
+    app.click("#runBtn")
+    expect(app.locator("#overview .pill.free")).to_contain_text("Ran your code", timeout=120000)
+    expect(app.locator("#overview")).to_contain_text("[0, 1]")
+    expect(app.locator("#stepCount")).to_have_text("Step 1 of 8")
+    app.click("#bLast")
+    expect(app.locator("#stepTitle")).to_have_text("Return [0, 1]")
+    # auto edge cases ran too; the empty list returns [] and has its own trace
+    expect(app.locator("#ecs .ec")).to_have_count(5)
+    app.locator("#ecs .ec", has_text="Empty `nums`").locator("[data-ec]").click()
+    expect(app.locator("#edgeBar")).to_be_visible()
+    app.click("#edgeBack")
+    expect(app.locator("#stepCount")).to_have_text("Step 1 of 8")
+
+
+def test_python_error_is_shown(app):
+    app.goto(app.url.split("#")[0] + "#code")
+    app.wait_for_selector("#editor", state="visible")
+    app.fill("#editor", "def first(nums):\n    total = 0\n    return nums[5]\n")
+    app.fill("#inputBox", "[1, 2]")
+    app.click("#runBtn")
+    expect(app.locator("#overview")).to_contain_text("IndexError", timeout=120000)
+    app.click("#bLast")
+    expect(app.locator("#stepLine")).to_have_text("line 3")

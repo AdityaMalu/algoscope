@@ -7,7 +7,8 @@ Step-by-step, animated traces of 159 DSA interview problems, in **Java, Python a
 - The 159 problems (an Amazon prep sheet: arrays, two pointers, sliding window, binary search, stacks, linked lists, trees, heaps, graphs, backtracking, DP, greedy, tries, design) are **pre-computed**. They need no account, no API key and no AI.
 - Traces come from **actually running** the Java solutions with a small tracer, so every step is real program state, not a guess.
 - The Python and C++ solutions were run on the same inputs and checked against Java: 693 of 693 test cases match in each language.
-- You can also **paste your own code** (any language) and get an AI-generated trace. That part needs a free OpenRouter key; see below.
+- **Paste your own Python** and it is actually run in your browser with [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly). Every line is recorded, arrays, maps, linked lists, trees and the call stack are drawn from the real values, and common edge cases (empty input, one element, duplicates, …) are run too. No key or account needed.
+- **Paste code in any other language** and get an AI-generated trace. That part needs a free OpenRouter key (see below). AI traces are checked before drawing and labelled *AI-generated*, because the model writes them without running the code. With a key, Python runs also get an AI overview and AI-picked edge cases, whose results come from running the code.
 
 ## Use AI for your own code (free OpenRouter key)
 
@@ -31,7 +32,8 @@ Now paste code in the editor and press **Visualize**, or type a question in **As
 
 ### Where the key is stored
 
-- Only in your browser's `localStorage`, under `algoscope:openrouterKey`.
+- Only in your browser: for this tab only (`sessionStorage`), or on this device (`localStorage`) if you tick **Remember the key on this device**.
+- To limit damage if a key ever leaks, set a credit limit of $0 on it at OpenRouter; free models still work.
 - It is sent only to `https://openrouter.ai/api/v1/chat/completions`, straight from your browser.
 - It is **never** written to this repository or sent anywhere else. Press **Remove key** in AI settings to delete it.
 - Don't paste your key into a GitHub issue, a commit or a shared screenshot. If that happens, delete the key on OpenRouter and create a new one.
@@ -44,6 +46,12 @@ Now paste code in the editor and press **Visualize**, or type a question in **As
 | Requests per day | about 50 (about 1,000 once the account has ever bought $10 of credits) |
 
 One **Visualize** is one request (roughly 4,000–8,000 tokens). One **Ask** is one request (about 1,000 tokens). Limits are per account, so extra keys don't add capacity. Free models are less accurate than paid ones, so double-check a trace that looks surprising.
+
+## How it's checked
+
+Every push runs [CI](.github/workflows/ci.yml): it rebuilds all traces from the Java sources, checks them, cross-checks the Python and C++ solutions against Java, runs the tracer and browser tests, and fails if the committed `data/` differs from a fresh build. Only a green run deploys to GitHub Pages.
+
+The page ships with a Content-Security-Policy (scripts only from itself, by hash, and cdnjs with an integrity hash; network calls only to openrouter.ai), so a script injected through an AI answer can't run or read your key.
 
 ## Run it locally
 
@@ -65,7 +73,10 @@ Requirements: Java 21+, Python 3.10+, and g++ (C++17) for the cross-language che
 | `python build.py Hashing` | Rebuilds one topic (class names are in `src/Main.java`) |
 | `python tools/verify.py` | Runs the Python and C++ solutions on the same inputs and compares them with Java |
 | `python tools/listing.py arrays-hashing` | Prints a topic's Java code with the lines that trace steps point at |
-| `python tools/make_site.py` | Regenerates `index.html` from `app.html` |
+| `python tools/check_data.py` | Checks every trace in `data/` (lines inside the code, known shapes, language maps) |
+| `python tools/make_site.py` | Regenerates `index.html` from `app.html` (adds the Content-Security-Policy) |
+| `python tools/make_site.py --out _site` | Also assembles the full site that GitHub Pages serves |
+| `pytest` | Tracer tests and browser tests (`pip install -r requirements-dev.txt`, then `playwright install chromium`) |
 
 ### Layout
 
@@ -77,7 +88,10 @@ src/                Java solutions + tracer (T.java), registry (P.java), formatt
 alt/py, alt/cpp     Python and C++ solutions; "# @12" / "// @12" tags map a line to Java line 12
 alt/spec.py         how to call each solution when cross-checking
 build.py            runs the Java tracer and writes data/
-tools/              verify.py, listing.py, make_site.py
+runner/             pytrace.py (records real Python runs) and py-worker.js (runs it with Pyodide in a Web Worker)
+tests/              pytest: tracer tests and Playwright browser tests
+tools/              verify.py, check_data.py, diff_data.py, listing.py, make_site.py
+.github/workflows/  CI: rebuild traces, cross-check languages, run tests, deploy to Pages
 sheet.json          the problem list (names, levels, topics, links)
 ```
 

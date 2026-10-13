@@ -224,7 +224,7 @@ svg.viz text{font-family:var(--f-mono)}
 .ec-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ec-h b{font-weight:600}
 .st{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
-.st.ok{background:var(--ok-bg);color:var(--ok)} .st.risky{background:var(--warn-bg);color:var(--warn)} .st.bug{background:var(--bad-bg);color:var(--bad)}
+.st.ok{background:var(--ok-bg);color:var(--ok)} .st.risky,.st.differs{background:var(--warn-bg);color:var(--warn)} .st.bug{background:var(--bad-bg);color:var(--bad)} .st.ran{background:var(--sunk);color:var(--ink-2)}
 .ec-io{font-size:13px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px;grid-column:1}
 .ec-io code{background:var(--sunk);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
 .ec-why{font-size:13px;color:var(--ink-2);margin:2px 0 0;grid-column:1}
@@ -356,7 +356,7 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
   <div class="modal" id="aiModal" hidden>
     <div class="modal-card" role="dialog" aria-labelledby="aiTitle">
       <h2 id="aiTitle">AI for your own code</h2>
-      <p class="note">The 159 problems from the sheet never need a key. A key is only used when you paste your own code and press <b>Visualize</b>, or use <b>Ask</b>.</p>
+      <p class="note">The 159 problems from the sheet never need a key, and neither does pasted <b>Python</b>: it runs for real in your browser. A key is used to trace other languages, to add an AI overview and edge cases to your Python, and for <b>Ask</b>.</p>
       <p class="note" id="aiInClaude" hidden>You're viewing this inside claude.ai, so your own code is traced with your Claude account. claude.ai pages can't contact other AI services; to use an OpenRouter key, open the GitHub Pages version of AlgoScope.</p>
       <div>
         <label for="orKey">OpenRouter API key</label>
@@ -439,7 +439,7 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
       <div class="inputs">
         <div>
           <label for="inputBox">Input to trace (optional)</label>
-          <input id="inputBox" type="text" placeholder="e.g. arr = [5, 1, 4, 2], target = 4 — leave blank and Claude picks one">
+          <input id="inputBox" type="text" placeholder="e.g. nums = [5, 1, 4, 2], target = 4 (leave blank to pick one)">
         </div>
         <div class="row">
           <button class="btn primary" id="runBtn" type="button">Visualize</button>
@@ -687,7 +687,7 @@ const DEMO = {
 };
 
 /* ---------- state ---------- */
-const S = { analysis:null, base:null, edge:null, lang:"Java", step:0, playing:false, timer:null, mode:"trace", ctl:null, askCtl:null };
+const S = { analysis:null, base:null, edge:null, ran:null, lang:"Java", step:0, playing:false, timer:null, mode:"trace", ctl:null, askCtl:null };
 const LIB = { index:null, files:{}, cur:null, level:"all" };
 const LIB_LANGS = ["Java", "Python", "C++"];
 /* The library's traces are recorded from the Java run; other languages map each step to their own line. */
@@ -840,12 +840,16 @@ renderAIStatus();
 
 const store = {
   get(){ try { return JSON.parse(localStorage.getItem("algoscope:v1") || "null"); } catch { return null; } },
-  set(v){ try { localStorage.setItem("algoscope:v1", JSON.stringify(v)); } catch {} }
+  set(v){ try { localStorage.setItem("algoscope:v1", JSON.stringify(v)); return true; } catch { return false; } }
 };
 function save(){
   const custom = S.analysis && !S.analysis.example && !S.analysis.library;
-  store.set({ code: custom || !S.base ? $("editor").value : "", lang:$("lang").value, input:$("inputBox").value, tier:$("tier").value,
-    analysis: custom ? S.analysis : null, libId: S.base ? LIB.cur && LIB.cur.id : null, libLang: S.lang });
+  const v = { code: custom || !S.base ? $("editor").value : "", lang:$("lang").value, input:$("inputBox").value, tier:$("tier").value,
+    analysis: custom ? (S.ran || S.analysis) : null, libId: S.base ? LIB.cur && LIB.cur.id : null, libLang: S.lang };
+  if (!store.set(v) && v.analysis){
+    v.analysis = {...v.analysis, edgeCases: (v.analysis.edgeCases || []).map(e => ({...e, steps: undefined}))};
+    if (!store.set(v)) store.set({...v, analysis: null});
+  }
 }
 
 /* ---------- small markdown (inline only + bullets + fences) ---------- */
@@ -1188,26 +1192,32 @@ function renderAll(){
   const c = a.complexity;
   $("overview").innerHTML = `
     <div>
-      <div class="ov-title"><h2>${esc(a.title)}</h2>${a.category ? `<span class="pill acc">${esc(a.category)}</span>` : ""}${a.language ? `<span class="pill">${esc(a.language)}</span>` : ""}${a.example ? `<span class="pill">Example</span>` : ""}${a.library ? `<span class="pill lvl ${esc(a.level)}">${esc(a.level)}</span><span class="pill free" title="This trace was recorded ahead of time by running the solution">Ran the real code · no AI</span>` : ""}${a.ran ? `<span class="pill free" title="Recorded by running your code in this browser">Ran your code</span>` : ""}${a.ai && !a.ran ? `<span class="pill warn" title="An AI model wrote this trace without running the code. Values can be wrong.">AI-generated · may contain mistakes</span>` : ""}</div>
+      <div class="ov-title"><h2>${esc(a.title)}</h2>${a.category ? `<span class="pill acc">${esc(a.category)}</span>` : ""}${a.language ? `<span class="pill">${esc(a.language)}</span>` : ""}${a.example ? `<span class="pill">Example</span>` : ""}${a.library ? `<span class="pill lvl ${esc(a.level)}">${esc(a.level)}</span><span class="pill free" title="This trace was recorded ahead of time by running the solution">Ran the real code · no AI</span>` : ""}${a.ran ? `<span class="pill free" title="Recorded by running your code in this browser">Ran your code</span>` : ""}${a.ran && a.ai ? `<span class="pill" title="The summary, complexity and expected answers come from an AI model">AI overview</span>` : ""}${a.ai && !a.ran ? `<span class="pill warn" title="An AI model wrote this trace without running the code. Values can be wrong.">AI-generated · may contain mistakes</span>` : ""}</div>
       <p class="ov-summary">${inline(a.summary)}</p>
-      <div class="ov-io">${a.input ? `<div><b>Traced input:</b> <code>${esc(a.input)}</code></div>` : ""}${a.output ? `<div><b>Result:</b> <code>${esc(a.output)}</code></div>` : ""}${a.capped ? `<div class="hint">This run is long, so a stretch of repetitive steps in the middle is skipped.</div>` : ""}${issueNote(a)}</div>
+      <div class="ov-io">${a.input ? `<div><b>Traced input:</b> <code>${esc(a.input)}</code></div>` : ""}${a.output ? `<div><b>${a.error ? "Error" : "Result"}:</b> <code>${esc(a.output)}</code></div>` : ""}${a.stdout ? `<div><b>Printed:</b> <code>${esc(a.stdout.length > 300 ? a.stdout.slice(0, 300) + "…" : a.stdout)}</code></div>` : ""}${a.capped ? `<div class="hint">This run is long, so a stretch of repetitive steps in the middle is skipped.</div>` : ""}${issueNote(a)}</div>
     </div>
     <div>
       <div class="cx"><div><span>Best</span><b>${esc(c.best)}</b></div><div><span>Average</span><b>${esc(c.average)}</b></div><div><span>Worst</span><b>${esc(c.worst)}</b></div><div><span>Space</span><b>${esc(c.space)}</b></div></div>
       ${c.note ? `<p class="cx-note">${inline(c.note)}</p>` : ""}
     </div>`;
-  const order = {bug: 0, risky: 1, ok: 2};
+  const order = {bug: 0, differs: 1, risky: 2, ran: 3, ok: 4};
   const ecs = a.edgeCases.slice().sort((x, y) => (order[st(x)] ?? 3) - (order[st(y)] ?? 3));
   $("ecs").innerHTML = ecs.length ? ecs.map((e, i) => {
-    const s = st(e); const lbl = {ok: "Handled", risky: "Risky", bug: "Breaks"}[s];
+    const s = st(e); const lbl = {ok: "Handled", risky: "Risky", bug: "Breaks", ran: "Ran", differs: "Differs"}[s];
     return `<div class="ec"><div class="ec-h"><span class="st ${s}">${lbl}</span><b>${esc(e.name || "Edge case")}</b></div>
-      <div class="ec-io">${e.input ? `<div>Input: <code>${esc(fmt(e.input))}</code></div>` : ""}${e.expected != null ? `<div>Expected: <code>${esc(fmt(e.expected))}</code> &nbsp;Actual: <code>${esc(fmt(e.actual ?? "?"))}</code></div>` : ""}</div>
+      <div class="ec-io">${e.input ? `<div>Input: <code>${esc(fmt(e.input))}</code></div>` : ""}${e.expected != null ? `<div>Expected: <code>${esc(fmt(e.expected))}</code> &nbsp;Actual: <code>${esc(fmt(e.actual ?? "?"))}</code></div>` : e.actual != null ? `<div>Result: <code>${esc(fmt(e.actual))}</code></div>` : ""}</div>
       ${e.why ? `<p class="ec-why">${inline(e.why)}</p>` : ""}
       ${e.input ? `<button class="btn" type="button" data-ec="${i}">Trace this</button>` : ""}</div>`;
   }).join("") : `<p class="hint">No edge cases reported.</p>`;
   $("ecs").querySelectorAll("[data-ec]").forEach(b => b.onclick = () => {
     const e = ecs[+b.dataset.ec];
-    if (S.base && !(Array.isArray(e.steps) && e.steps.length)){ showErr("This input finishes before the code reaches any traced step.", true); return; }
+    if ((S.base || S.ran) && !(Array.isArray(e.steps) && e.steps.length)){ showErr("This input finishes before the code reaches any traced step.", true); return; }
+    if (S.ran){
+      stopPlay();
+      S.edge = e; S.analysis = {...S.ran, steps: e.steps, input: e.input, output: e.actual, capped: !!e.capped}; S.step = 0; renderAll();
+      $("stage").closest(".panel").scrollIntoView({behavior: "smooth", block: "start"});
+      return;
+    }
     if (S.base){
       stopPlay();
       S.edge = e; S.analysis = libView(); S.step = 0; renderAll();
@@ -1223,14 +1233,14 @@ function renderAll(){
   const qs = ["What is the loop invariant here?", "How would I make this faster?", "Explain this step in simpler words", "Write a test that breaks this code"];
   $("askChips").innerHTML = qs.map(q => `<button type="button" class="chip">${esc(q)}</button>`).join("");
   $("askChips").querySelectorAll(".chip").forEach(c => c.onclick = () => { $("askBox").value = c.textContent; ask(); });
-  const onEdge = !!(S.base && S.edge);
+  const onEdge = !!((S.base || S.ran) && S.edge);
   $("edgeBar").hidden = !onEdge;
   if (onEdge) $("edgeName").textContent = S.edge.name || "";
   renderLibBar();
   setMode("trace");
   renderStep();
 }
-function st(e){ const s = String(e.status || "").toLowerCase(); return s.startsWith("ok") || s === "handled" || s === "pass" ? "ok" : (s === "bug" || s === "fail" || s === "breaks" || s === "crash") ? "bug" : "risky"; }
+function st(e){ const s = String(e.status || "").toLowerCase(); if (s === "ran" || s === "differs") return s; return s.startsWith("ok") || s === "handled" || s === "pass" ? "ok" : (s === "bug" || s === "fail" || s === "breaks" || s === "crash") ? "bug" : "risky"; }
 
 /* ---------- playback ---------- */
 function go(i){ stopPlay(); S.step = i; renderStep(); }
@@ -1344,9 +1354,143 @@ function overlay(on, text){
 }
 function overlaySub(t){ const ov = $("stage").querySelector(".overlay .hint"); if (ov) ov.textContent = t; }
 
+/* ---------- run Python for real (Pyodide in a Web Worker) ---------- */
+const PY = {
+  worker: null, seq: 0, pending: new Map(), loaded: false, broken: false,
+  supported(){ return !this.broken && typeof Worker === "function" && typeof WebAssembly === "object"; },
+  spawn(){
+    this.worker = new Worker("runner/py-worker.js");
+    this.worker.onmessage = ({data}) => {
+      const p = this.pending.get(data.id); if (!p) return;
+      this.pending.delete(data.id);
+      if (data.ok){ this.loaded = true; p.resolve(data.result); }
+      else p.reject(this.loaded ? {code: "py_error", message: data.error} : {code: "py_unavailable", message: data.error});
+    };
+    this.worker.onerror = e => { e.preventDefault(); this.fail({code: "py_unavailable", message: e.message}); };
+  },
+  fail(err){ const ps = [...this.pending.values()]; this.pending.clear(); if (this.worker){ this.worker.terminate(); this.worker = null; } this.loaded = false; ps.forEach(p => p.reject(err)); },
+  run(job, signal){
+    if (!this.worker) this.spawn();
+    const id = ++this.seq, limit = this.loaded ? 30000 : 120000;
+    return new Promise((resolve, reject) => {
+      const t = setTimeout(() => this.fail({code: this.loaded ? "py_timeout" : "py_unavailable", message: "timed out"}), limit);
+      const onAbort = () => this.fail({code: "cancelled"});
+      if (signal) signal.addEventListener("abort", onAbort, {once: true});
+      const done = f => v => { clearTimeout(t); if (signal) signal.removeEventListener("abort", onAbort); f(v); };
+      this.pending.set(id, {resolve: done(resolve), reject: done(reject)});
+      this.worker.postMessage({id, job});
+    });
+  }
+};
+ERR.py_timeout = "Your code ran for more than 30 seconds, so it was stopped. Is there an infinite loop?";
+ERR.py_error = "Python couldn't run this code.";
+ERR.py_unavailable = "Python couldn't be loaded in this browser. Check your connection and try again.";
+
+function looksPython(code){
+  const c = code.replace(/#.*$/gm, "");
+  if (/[;{}]\s*$/m.test(c) && !/^\s*(def|class)\s.*:\s*$/m.test(c)) return false;
+  return /^\s*(def|class)\s+\w+.*:\s*$/m.test(c) || /^\s*(for|while|if)\s.*:\s*$/m.test(c) || /^\s*(print\(|import\s|from\s+\w+\s+import\s)/m.test(c);
+}
+function usePython(code){ const L = $("lang").value; return PY.supported() && (L === "Python" || (L === "auto" && looksPython(code))); }
+
+function metaPrompt(code, input){
+  return `You are an expert algorithms tutor. A learner pasted the Python code below. AlgoScope has already run it for real on this input and recorded every step, so do NOT trace it.
+
+Input that was run: ${input || "(the code's own script)"}
+
+Return ONLY one JSON object, no markdown fences, of exactly this shape:
+{
+ "title": "short algorithm name, e.g. Two Sum (hash map)",
+ "category": "e.g. Arrays · Hashing",
+ "summary": "2-3 plain sentences on what it does and the core idea",
+ "complexity": {"best":"O(..)","average":"O(..)","worst":"O(..)","space":"O(..)","note":"one sentence on when best/worst happen"},
+ "intuition": ["3-5 short bullets on why it works (invariants, key insight)"],
+ "pitfalls": ["3-5 common mistakes when writing this algorithm"],
+ "edgeCases": [{"name":"Empty input","input":"nums = [], target = 3","expected":"the CORRECT answer for this input","why":"one sentence on why this case matters"}]
+}
+Give 5-7 edge cases: empty input, single element, duplicates, negatives/zero, worst-case shape, and anything specific to this problem. Write each "input" in the same style as the input above (Python literals, named like the parameters), small enough to run instantly. "expected" is what a correct solution returns, written as JSON (lists in [], null, true/false); AlgoScope runs the code and compares.
+
+CODE:
+${code}`;
+}
+
+const normOut = s => String(s ?? "").replace(/\s+/g, "").replace(/'/g, '"').replace(/\(/g, "[").replace(/\)/g, "]")
+  .replace(/\bNone\b/g, "null").replace(/\bTrue\b/g, "true").replace(/\bFalse\b/g, "false").toLowerCase();
+function judgeEdge(e){
+  if (e.error) return {...e, status: "bug", actual: e.error, why: ((e.why ? e.why + " " : "") + `It raises \`${e.error.split(" (line")[0]}\`.`).trim()};
+  if (e.expected == null || e.expected === "") return {...e, status: "ran", why: ((e.why ? e.why + " " : "") + "Check the result yourself: there's no expected answer to compare with.").trim()};
+  return normOut(e.expected) === normOut(e.actual) ? {...e, status: "ok"}
+    : {...e, status: "differs", why: ((e.why ? e.why + " " : "") + "The result differs from the expected answer. The expected answer comes from the AI, so double-check which one is right.").trim()};
+}
+
+function ranAnalysis(code, r, meta){
+  const m = meta || {}, cx = m.complexity || {};
+  const aiNote = IN_CLAUDE ? "" : AI.provider() ? "" : " Add a free OpenRouter key in AI settings to also get an explanation, complexity and AI-picked edge cases.";
+  return {
+    title: m.title || (r.title && r.title !== "Your script" ? r.title : "Your Python code"), category: m.category || "", language: "Python",
+    summary: m.summary || ("Traced by running your code in this browser with Python (Pyodide)." + (r.inputGuessed ? " No input was given, so AlgoScope picked one from the parameter names." : "") + aiNote),
+    input: r.input || "", output: r.error || r.output || "", stdout: r.stdout || "", error: r.error,
+    complexity: {best: cx.best || "–", average: cx.average || "–", worst: cx.worst || "–", space: cx.space || "–", note: cx.note || ""},
+    intuition: Array.isArray(m.intuition) ? m.intuition.map(String) : [], pitfalls: Array.isArray(m.pitfalls) ? m.pitfalls.map(String) : [],
+    edgeCases: (r.edgeCases || []).map(judgeEdge), steps: r.steps, capped: r.capped, code, ran: true, ai: !!meta
+  };
+}
+
+async function analyzePython(code){
+  const input = $("inputBox").value.trim();
+  showErr(""); stopPlay();
+  const ctl = S.ctl = new AbortController();
+  $("runBtn").disabled = true; $("stopBtn").hidden = false;
+  overlay(true, PY.loaded ? "Running your Python…" : "Loading Python into this browser (about 10 MB, first time only)…");
+  overlaySub(PY.loaded ? "" : "After that, runs take about a second.");
+  let r;
+  try {
+    r = await PY.run({code, input, autoEdges: true}, ctl.signal);
+  } catch (e) {
+    overlay(false); $("runBtn").disabled = false; $("stopBtn").hidden = true; S.ctl = null;
+    if (e && e.code === "py_unavailable"){ PY.broken = true; if (await AI.ready()){ showErr("Python couldn't load here, so the AI will trace it instead.", true); return analyze(); } }
+    if (!(e && e.code === "cancelled")) showErr(errText(e) + (e && e.code === "py_error" && e.message ? " (" + e.message.split("\n").slice(-2).join(" ").slice(0, 200) + ")" : ""));
+    return;
+  }
+  overlay(false); $("runBtn").disabled = false; $("stopBtn").hidden = true; S.ctl = null;
+  if (!r.steps.length){ showErr(r.error ? r.error : "The code ran, but none of its lines ran with this input.", !r.error); setMode("edit"); return; }
+  const a = ranAnalysis(code, r, null);
+  S.base = null; S.edge = null; LIB.cur = null; S.ran = a; S.analysis = a; S.step = 0; layoutCache.clear();
+  CUSTOM = a; renderAll(); save();
+  if (r.error) showErr("Your code stopped with an error. The last step shows where.", true);
+  if (location.hash !== "#code"){ try { history.replaceState(null, "", "#code"); } catch {} }
+  if (await AI.ready()) addOverview(code, a);
+}
+
+/* Ask the AI only for the explanation and edge cases; the trace itself already came from running the code. */
+async function addOverview(code, a){
+  $("statusText").textContent = "Adding the AI overview…";
+  try {
+    const meta = await AI.json(metaPrompt(code, a.input), {modelTier: "quick"});
+    if (!meta || typeof meta !== "object") throw {code: "invalid_json"};
+    const specs = (Array.isArray(meta.edgeCases) ? meta.edgeCases : []).filter(e => e && typeof e === "object" && e.input)
+      .slice(0, 7).map(e => ({name: String(e.name || "Edge case"), input: String(e.input), expected: e.expected == null ? null : (typeof e.expected === "string" ? e.expected : JSON.stringify(e.expected)), why: String(e.why || "")}));
+    let edges = a.edgeCases;
+    if (specs.length){
+      const r = await PY.run({code, input: a.input, edges: specs});
+      edges = r.edgeCases.map(judgeEdge).concat(a.edgeCases.filter(x => !specs.some(s => normOut(s.input) === normOut(x.input))));
+    }
+    if (S.ran !== a) return;   // the viewer moved on
+    const cx = meta.complexity || {};
+    Object.assign(a, {title: String(meta.title || a.title), category: String(meta.category || ""), summary: String(meta.summary || a.summary),
+      complexity: {best: cx.best || "–", average: cx.average || "–", worst: cx.worst || "–", space: cx.space || "–", note: cx.note || ""},
+      intuition: Array.isArray(meta.intuition) ? meta.intuition.map(String) : [], pitfalls: Array.isArray(meta.pitfalls) ? meta.pitfalls.map(String) : [],
+      edgeCases: edges, ai: true});
+    const keep = S.step; if (!S.edge) S.analysis = a; renderAll(); S.step = keep; renderStep(); save();
+  } catch (e) {
+    if (S.ran === a) showErr("The trace is from running your code. The AI overview couldn't be added: " + errText(e), true);
+  } finally { renderAIStatus(); }
+}
+
 async function analyze(){
   const code = $("editor").value.replace(/\s+$/, "");
   if (!code.trim()){ showErr("Paste some code first."); setMode("edit"); $("editor").focus(); return; }
+  if (usePython(code)) return analyzePython(code);
   if (!(await AI.ready())){ showErr(IN_CLAUDE ? "Claude isn't available here right now." : "Add a free OpenRouter key in AI settings to trace your own code. The 159 sheet problems work without one.", true); if (!IN_CLAUDE) openAI(); return; }
   showErr(""); stopPlay();
   S.ctl = new AbortController();
@@ -1362,7 +1506,7 @@ async function analyze(){
         overlaySub(`${Math.round((Date.now() - t0) / 1000)} s`); }
     });
     S.analysis = normalize(raw, code, $("lang").value);
-    S.base = null; S.edge = null; LIB.cur = null; S.step = 0; layoutCache.clear(); overlay(false); CUSTOM = S.analysis; renderAll(); save();
+    S.base = null; S.edge = null; S.ran = null; LIB.cur = null; S.step = 0; layoutCache.clear(); overlay(false); CUSTOM = S.analysis; renderAll(); save();
     if (location.hash !== "#code") { try { history.replaceState(null, "", "#code"); } catch {} }
   } catch (e) {
     overlay(false);
@@ -1434,7 +1578,7 @@ Object.keys(EXAMPLES).forEach(k => { const o = document.createElement("option");
 exSel.onchange = () => {
   const ex = EXAMPLES[exSel.value]; exSel.value = ""; if (!ex) return;
   ed.value = ex.code; $("lang").value = ex.lang; $("inputBox").value = "";
-  S.base = null; S.edge = null; LIB.cur = null;
+  S.base = null; S.edge = null; S.ran = null; LIB.cur = null;
   if (ex.code === DEMO_CODE){ S.analysis = {...DEMO, code: DEMO_CODE}; S.step = 0; renderAll(); }
   else { showErr("Example loaded. Press Visualize to trace it.", true); setMode("edit"); }
   save();
@@ -1459,7 +1603,7 @@ async function openProblem(id){
   LIB.cur = p;
   markViewed(p.id);
   S.base = {...p, library: true, intuition: p.intuition || [], pitfalls: p.pitfalls || [], edgeCases: p.edgeCases || []};
-  S.edge = null; S.analysis = libView(); S.step = 0; layoutCache.clear();
+  S.edge = null; S.ran = null; S.analysis = libView(); S.step = 0; layoutCache.clear();
   ed.value = S.analysis.code; $("lang").value = S.lang; $("inputBox").value = "";
   renderAll(); save();
   return true;
@@ -1524,6 +1668,7 @@ async function route(){
 }
 function showCode(){
   S.base = null; S.edge = null; LIB.cur = null; S.step = 0; layoutCache.clear();
+  S.ran = CUSTOM && CUSTOM.ran ? CUSTOM : null;
   if (CUSTOM){ S.analysis = CUSTOM; ed.value = CUSTOM.code; }
   else { S.analysis = {...DEMO, code: DEMO_CODE}; if (!ed.value.trim() || LIB.index) ed.value = DEMO_CODE; }
   showView(false); renderAll(); setMode("edit"); document.title = "Your code · AlgoScope";
@@ -1574,7 +1719,10 @@ $("homeLevels").querySelectorAll(".chip").forEach(c => c.onclick = () => {
   draw();
   if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { if (!$("homeView").hidden) draw(); }, 2200);
 })();
-$("edgeBack").onclick = () => { if (S.base){ stopPlay(); S.edge = null; S.analysis = libView(); S.step = 0; renderAll(); } };
+$("edgeBack").onclick = () => {
+  if (S.base){ stopPlay(); S.edge = null; S.analysis = libView(); S.step = 0; renderAll(); }
+  else if (S.ran){ stopPlay(); S.edge = null; S.analysis = S.ran; S.step = 0; renderAll(); }
+};
 
 /* ---------- boot ---------- */
 const DEMO_CODE = EXAMPLES["Binary search · Python"].code;
@@ -1584,7 +1732,7 @@ const DEMO_CODE = EXAMPLES["Binary search · Python"].code;
   if (saved){ if (saved.lang) $("lang").value = saved.lang; if (saved.input) $("inputBox").value = saved.input; if (saved.tier) $("tier").value = saved.tier; }
   if (saved && saved.analysis && saved.analysis.steps && saved.analysis.steps.length){ CUSTOM = saved.analysis; ed.value = saved.code || CUSTOM.code; }
   const haveLib = await loadIndex();
-  if (!haveLib){ ed.value = ed.value || DEMO_CODE; S.analysis = CUSTOM || {...DEMO, code: DEMO_CODE}; $("homeView").hidden = true; $("appView").hidden = false; renderAll(); return; }
+  if (!haveLib){ ed.value = ed.value || DEMO_CODE; S.analysis = CUSTOM || {...DEMO, code: DEMO_CODE}; S.ran = CUSTOM && CUSTOM.ran ? CUSTOM : null; $("homeView").hidden = true; $("appView").hidden = false; renderAll(); return; }
   await route();
   window.addEventListener("hashchange", route);
 })();

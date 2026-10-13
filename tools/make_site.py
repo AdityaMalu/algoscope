@@ -57,6 +57,7 @@ def main():
         shutil.copytree(os.path.join(root, "data"), os.path.join(out, "data"))
         write(os.path.join(out, "index.html"), page)
         shutil.copy(os.path.join(root, "LICENSE"), os.path.join(out, "LICENSE"))
+        shutil.copytree(os.path.join(root, "runner"), os.path.join(out, "runner"), ignore=shutil.ignore_patterns("__pycache__"))
         print("assembled", out)
 
 
