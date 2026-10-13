@@ -121,6 +121,8 @@ select.sm,.btn{border:1px solid var(--line);background:var(--surface);border-rad
 /* stage */
 .stephead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
 .stepmeta{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;letter-spacing:.03em;text-transform:uppercase}
+.stepmeta .linkbtn{margin-left:auto;border:0;background:none;padding:0;color:var(--accent);font-size:12px;text-transform:none;letter-spacing:0;cursor:pointer}
+.stepmeta .linkbtn:hover{text-decoration:underline}
 .stepmeta .lnchip{font-family:var(--f-mono);text-transform:none;background:color-mix(in srgb,var(--m-active) 25%,transparent);color:var(--ink);padding:1px 7px;border-radius:5px}
 .steptitle{font-family:var(--f-display);font-size:19px;font-weight:600;margin:0}
 .stepexplain{margin:0;color:var(--ink-2);font-size:14px;max-width:72ch}
@@ -457,7 +459,7 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
     <section class="panel" aria-label="Visualization">
       <div class="edgebar" id="edgeBar" hidden><span>Edge case: <b id="edgeName"></b></span><button class="btn" id="edgeBack" type="button">Back to main trace</button></div>
       <div class="stephead">
-        <div class="stepmeta"><span id="stepCount">Step 0 of 0</span><span class="lnchip" id="stepLine">line –</span></div>
+        <div class="stepmeta"><span id="stepCount">Step 0 of 0</span><span class="lnchip" id="stepLine">line –</span><button class="linkbtn" id="bLink" type="button" hidden>Copy link to this step</button></div>
         <p class="steptitle" id="stepTitle">–</p>
         <p class="stepexplain" id="stepExplain"></p>
       </div>
@@ -1165,6 +1167,7 @@ function renderStep(){
   const n = a.steps.length; S.step = Math.max(0, Math.min(n - 1, S.step));
   const st = a.steps[S.step], prev = a.steps[S.step - 1];
   $("stepCount").textContent = `Step ${S.step + 1} of ${n}`;
+  $("bLink").hidden = !(S.base && !S.edge && LIB.cur);
   $("stepLine").textContent = st.line ? `line ${st.line}` : "line –";
   $("stepTitle").textContent = st.title || "Step " + (S.step + 1);
   $("stepExplain").innerHTML = inline(st.explain);
@@ -1661,9 +1664,11 @@ function showView(home){
   window.scrollTo(0, 0);
 }
 async function route(){
-  const id = decodeURIComponent(location.hash.slice(1));
+  const [id, at] = decodeURIComponent(location.hash.slice(1)).split("/");
   if (id === "code"){ showCode(); return; }
-  if (id && id !== "home" && LIB.index && await openProblem(id)){ showView(false); document.title = (LIB.cur ? LIB.cur.title + " · " : "") + "AlgoScope"; return; }
+  if (id && id !== "home" && LIB.index && await openProblem(id)){
+    if (at && +at > 1){ S.step = Math.min(S.analysis.steps.length, Math.floor(+at)) - 1; renderStep(); }
+    showView(false); document.title = (LIB.cur ? LIB.cur.title + " · " : "") + "AlgoScope"; return; }
   renderHome(); showView(true); document.title = "AlgoScope";
 }
 function showCode(){
@@ -1719,6 +1724,12 @@ $("homeLevels").querySelectorAll(".chip").forEach(c => c.onclick = () => {
   draw();
   if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { if (!$("homeView").hidden) draw(); }, 2200);
 })();
+$("bLink").onclick = async () => {
+  if (!LIB.cur) return;
+  const url = location.href.split("#")[0] + "#" + LIB.cur.id + "/" + (S.step + 1);
+  try { await navigator.clipboard.writeText(url); showErr("Link copied. It opens this problem at step " + (S.step + 1) + ".", true); }
+  catch { showErr("Copy this link: " + url, true); }
+};
 $("edgeBack").onclick = () => {
   if (S.base){ stopPlay(); S.edge = null; S.analysis = libView(); S.step = 0; renderAll(); }
   else if (S.ran){ stopPlay(); S.edge = null; S.analysis = S.ran; S.step = 0; renderAll(); }

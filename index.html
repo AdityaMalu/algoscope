@@ -2,10 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Sn9xCTHvYTH7+MrUOqvkuBUCTckH/9L10eHSH2y0fp8=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JTOV3rXHOxgcYABlFBHXV0F8TF4v9qdwAa12JXHMtiA=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++.">
-<style>html,body{margin:0}body{font:14px system-ui,-apple-system,'Segoe UI',sans-serif}</style>
+<meta name="description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++. Paste your own Python and watch it run.">
+<link rel="canonical" href="https://adityamalu.github.io/algoscope/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="AlgoScope">
+<meta property="og:title" content="AlgoScope: watch DSA algorithms run, line by line">
+<meta property="og:description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++. Paste your own Python and watch it run.">
+<meta property="og:url" content="https://adityamalu.github.io/algoscope/">
+<meta property="og:image" content="https://adityamalu.github.io/algoscope/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<style>html,body{margin:0}body{font:14px system-ui,-apple-system,'Segoe UI',sans-serif}.site-foot{max-width:1360px;margin:0 auto;padding:0 20px 32px;font-size:13px;color:var(--ink-3)}.site-foot a{color:inherit}</style>
 <title>AlgoScope</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
@@ -128,6 +137,8 @@ select.sm,.btn{border:1px solid var(--line);background:var(--surface);border-rad
 /* stage */
 .stephead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
 .stepmeta{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;letter-spacing:.03em;text-transform:uppercase}
+.stepmeta .linkbtn{margin-left:auto;border:0;background:none;padding:0;color:var(--accent);font-size:12px;text-transform:none;letter-spacing:0;cursor:pointer}
+.stepmeta .linkbtn:hover{text-decoration:underline}
 .stepmeta .lnchip{font-family:var(--f-mono);text-transform:none;background:color-mix(in srgb,var(--m-active) 25%,transparent);color:var(--ink);padding:1px 7px;border-radius:5px}
 .steptitle{font-family:var(--f-display);font-size:19px;font-weight:600;margin:0}
 .stepexplain{margin:0;color:var(--ink-2);font-size:14px;max-width:72ch}
@@ -466,7 +477,7 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
     <section class="panel" aria-label="Visualization">
       <div class="edgebar" id="edgeBar" hidden><span>Edge case: <b id="edgeName"></b></span><button class="btn" id="edgeBack" type="button">Back to main trace</button></div>
       <div class="stephead">
-        <div class="stepmeta"><span id="stepCount">Step 0 of 0</span><span class="lnchip" id="stepLine">line –</span></div>
+        <div class="stepmeta"><span id="stepCount">Step 0 of 0</span><span class="lnchip" id="stepLine">line –</span><button class="linkbtn" id="bLink" type="button" hidden>Copy link to this step</button></div>
         <p class="steptitle" id="stepTitle">–</p>
         <p class="stepexplain" id="stepExplain"></p>
       </div>
@@ -1174,6 +1185,7 @@ function renderStep(){
   const n = a.steps.length; S.step = Math.max(0, Math.min(n - 1, S.step));
   const st = a.steps[S.step], prev = a.steps[S.step - 1];
   $("stepCount").textContent = `Step ${S.step + 1} of ${n}`;
+  $("bLink").hidden = !(S.base && !S.edge && LIB.cur);
   $("stepLine").textContent = st.line ? `line ${st.line}` : "line –";
   $("stepTitle").textContent = st.title || "Step " + (S.step + 1);
   $("stepExplain").innerHTML = inline(st.explain);
@@ -1670,9 +1682,11 @@ function showView(home){
   window.scrollTo(0, 0);
 }
 async function route(){
-  const id = decodeURIComponent(location.hash.slice(1));
+  const [id, at] = decodeURIComponent(location.hash.slice(1)).split("/");
   if (id === "code"){ showCode(); return; }
-  if (id && id !== "home" && LIB.index && await openProblem(id)){ showView(false); document.title = (LIB.cur ? LIB.cur.title + " · " : "") + "AlgoScope"; return; }
+  if (id && id !== "home" && LIB.index && await openProblem(id)){
+    if (at && +at > 1){ S.step = Math.min(S.analysis.steps.length, Math.floor(+at)) - 1; renderStep(); }
+    showView(false); document.title = (LIB.cur ? LIB.cur.title + " · " : "") + "AlgoScope"; return; }
   renderHome(); showView(true); document.title = "AlgoScope";
 }
 function showCode(){
@@ -1728,6 +1742,12 @@ $("homeLevels").querySelectorAll(".chip").forEach(c => c.onclick = () => {
   draw();
   if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => { if (!$("homeView").hidden) draw(); }, 2200);
 })();
+$("bLink").onclick = async () => {
+  if (!LIB.cur) return;
+  const url = location.href.split("#")[0] + "#" + LIB.cur.id + "/" + (S.step + 1);
+  try { await navigator.clipboard.writeText(url); showErr("Link copied. It opens this problem at step " + (S.step + 1) + ".", true); }
+  catch { showErr("Copy this link: " + url, true); }
+};
 $("edgeBack").onclick = () => {
   if (S.base){ stopPlay(); S.edge = null; S.analysis = libView(); S.step = 0; renderAll(); }
   else if (S.ran){ stopPlay(); S.edge = null; S.analysis = S.ran; S.step = 0; renderAll(); }
@@ -1748,5 +1768,6 @@ const DEMO_CODE = EXAMPLES["Binary search · Python"].code;
 })();
 </script>
 
+<footer class="site-foot"><a href="problems/">All 159 problems as plain pages</a> · <a href="https://github.com/AdityaMalu/algoscope">Source on GitHub</a> · MIT license</footer>
 </body>
 </html>

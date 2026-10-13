@@ -164,3 +164,25 @@ def test_python_error_is_shown(app):
     expect(app.locator("#overview")).to_contain_text("IndexError", timeout=120000)
     app.click("#bLast")
     expect(app.locator("#stepLine")).to_have_text("line 3")
+
+
+def test_step_links(app):
+    app.goto(app.url.split("#")[0] + "#binary-search/3")
+    expect(app.locator("#stepCount")).to_have_text(re.compile(r"Step 3 of"))
+    expect(app.locator("#bLink")).to_be_visible()
+
+
+def test_problem_pages(page, site):
+    """The plain pages for search engines (built by `make_site.py --out`) exist and link into the app."""
+    page.goto(site + "problems/")
+    assert page.locator("ul.plist a").count() == 159
+    page.click("text=Two Sum")
+    expect(page.locator("h1")).to_have_text("Two Sum")
+    assert page.locator("meta[property='og:title']").get_attribute("content").startswith("Two Sum")
+    assert page.locator("pre code").count() == 3
+    page.click("text=Watch the animated trace")
+    expect(page.locator("#stepCount")).to_have_text(re.compile(r"Step 1 of"))
+
+
+def test_sitemap(page, site):
+    assert page.goto(site + "sitemap.xml").text().count("<loc>") == 161

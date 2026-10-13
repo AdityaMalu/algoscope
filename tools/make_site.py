@@ -6,6 +6,8 @@ Usage:
 """
 import base64, hashlib, os, re, shutil, sys
 
+import make_pages
+
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -25,6 +27,12 @@ def csp(html):
             "object-src 'none'; base-uri 'none'; form-action 'none'")
 
 
+SITE = make_pages.SITE
+DESC = "Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++. Paste your own Python and watch it run."
+FOOT = ('<footer class="site-foot"><a href="problems/">All 159 problems as plain pages</a> · '
+        '<a href="https://github.com/AdityaMalu/algoscope">Source on GitHub</a> · MIT license</footer>\n')
+
+
 def build_index():
     src = open(os.path.join(root, "app.html"), encoding="utf-8").read()
     cut = src.index('<div class="wrap">')
@@ -34,9 +42,16 @@ def build_index():
         "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
         f"<meta http-equiv=\"Content-Security-Policy\" content=\"{csp(src)}\">\n"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\">\n"
-        "<meta name=\"description\" content=\"Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++.\">\n"
-        "<style>html,body{margin:0}body{font:14px system-ui,-apple-system,'Segoe UI',sans-serif}</style>\n"
-        + head + "</head>\n<body>\n" + body + "\n</body>\n</html>\n"
+        f"<meta name=\"description\" content=\"{DESC}\">\n"
+        f"<link rel=\"canonical\" href=\"{SITE}\">\n"
+        "<meta property=\"og:type\" content=\"website\">\n<meta property=\"og:site_name\" content=\"AlgoScope\">\n"
+        "<meta property=\"og:title\" content=\"AlgoScope: watch DSA algorithms run, line by line\">\n"
+        f"<meta property=\"og:description\" content=\"{DESC}\">\n<meta property=\"og:url\" content=\"{SITE}\">\n"
+        f"<meta property=\"og:image\" content=\"{SITE}assets/og.png\">\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n"
+        "<link rel=\"icon\" href=\"assets/icon.svg\" type=\"image/svg+xml\">\n"
+        "<style>html,body{margin:0}body{font:14px system-ui,-apple-system,'Segoe UI',sans-serif}"
+        ".site-foot{max-width:1360px;margin:0 auto;padding:0 20px 32px;font-size:13px;color:var(--ink-3)}.site-foot a{color:inherit}</style>\n"
+        + head + "</head>\n<body>\n" + body + "\n" + FOOT + "</body>\n</html>\n"
     )
 
 
@@ -58,7 +73,9 @@ def main():
         write(os.path.join(out, "index.html"), page)
         shutil.copy(os.path.join(root, "LICENSE"), os.path.join(out, "LICENSE"))
         shutil.copytree(os.path.join(root, "runner"), os.path.join(out, "runner"), ignore=shutil.ignore_patterns("__pycache__"))
-        print("assembled", out)
+        shutil.copytree(os.path.join(root, "assets"), os.path.join(out, "assets"))
+        n = make_pages.build(out, write)
+        print(f"assembled {out} with {n} problem pages")
 
 
 if __name__ == "__main__":
