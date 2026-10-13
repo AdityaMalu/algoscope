@@ -74,6 +74,9 @@ def main():
         shutil.copy(os.path.join(root, "LICENSE"), os.path.join(out, "LICENSE"))
         shutil.copytree(os.path.join(root, "runner"), os.path.join(out, "runner"), ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copytree(os.path.join(root, "assets"), os.path.join(out, "assets"))
+        for f in os.listdir(root):  # Google Search Console ownership file(s)
+            if re.fullmatch(r"google[0-9a-f]+\.html", f):
+                shutil.copy(os.path.join(root, f), os.path.join(out, f))
         n = make_pages.build(out, write)
         print(f"assembled {out} with {n} problem pages")
 
