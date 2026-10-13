@@ -86,3 +86,7 @@ Inside a Java solution, code between `//@code <name>` and `//@end` is what the p
 ## Credits
 
 Problem names and links point to [NeetCode](https://neetcode.io/) and [LeetCode](https://leetcode.com/). Problem statements are not copied here; solutions, explanations and traces are original.
+
+## License
+
+[MIT](LICENSE)
