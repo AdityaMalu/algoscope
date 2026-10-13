@@ -1,0 +1,1429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++.">
+<style>html,body{margin:0}body{font:14px system-ui,-apple-system,'Segoe UI',sans-serif}</style>
+<title>AlgoScope</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+/* Layout: overview band → code panel (edit/trace) beside a graph-paper stage → report (edge cases, ideas, ask) */
+:root{
+  --paper:#f5f7fb; --surface:#ffffff; --sunk:#eef1f7; --ink:#18213a; --ink-2:#4a5573; --ink-3:#7d87a3;
+  --line:#d9deea; --grid:#e3e8f2; --accent:#2747d9; --accent-ink:#ffffff; --accent-soft:#e3e8fd;
+  --m-active:#f2a516; --m-compare:#e8546b; --m-swap:#8a5cf0; --m-done:#16a38a; --m-found:#14a34a; --m-visit:#5aa0f2; --m-dim:#c9cfdd; --m-error:#d93a3a;
+  --ok:#14805e; --ok-bg:#ddf3ea; --warn:#9a5b00; --warn-bg:#fdf0d5; --bad:#b4233a; --bad-bg:#fbe1e5;
+  --hl-kw:#8a2bd0; --hl-str:#1a7f43; --hl-num:#b4501a; --hl-com:#8b93a8; --hl-fn:#2747d9; --hl-type:#0f7c8c;
+  --f-display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1424; --surface:#161d31; --sunk:#1c2440; --ink:#e6eaf5; --ink-2:#aeb7d0; --ink-3:#7a84a3;
+  --line:#2a3454; --grid:#1d2642; --accent:#7d96ff; --accent-ink:#0f1424; --accent-soft:#25305a;
+  --m-active:#f5b335; --m-compare:#f06b80; --m-swap:#a585ff; --m-done:#2cc4a6; --m-found:#33c46a; --m-visit:#6eb0ff; --m-dim:#39435f; --m-error:#ff6161;
+  --ok:#5fd7a8; --ok-bg:#163a30; --warn:#f3c26b; --warn-bg:#3d3018; --bad:#ff8b9b; --bad-bg:#43202a;
+  --hl-kw:#c79bff; --hl-str:#7fd99b; --hl-num:#ffad73; --hl-com:#6c7694; --hl-fn:#8fa6ff; --hl-type:#5fd0de;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1424; --surface:#161d31; --sunk:#1c2440; --ink:#e6eaf5; --ink-2:#aeb7d0; --ink-3:#7a84a3;
+  --line:#2a3454; --grid:#1d2642; --accent:#7d96ff; --accent-ink:#0f1424; --accent-soft:#25305a;
+  --m-active:#f5b335; --m-compare:#f06b80; --m-swap:#a585ff; --m-done:#2cc4a6; --m-found:#33c46a; --m-visit:#6eb0ff; --m-dim:#39435f; --m-error:#ff6161;
+  --ok:#5fd7a8; --ok-bg:#163a30; --warn:#f3c26b; --warn-bg:#3d3018; --bad:#ff8b9b; --bad-bg:#43202a;
+  --hl-kw:#c79bff; --hl-str:#7fd99b; --hl-num:#ffad73; --hl-com:#6c7694; --hl-fn:#8fa6ff; --hl-type:#5fd0de;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1360px;margin:0 auto;padding-inline:20px;padding-block:18px 48px;display:flex;flex-direction:column;gap:18px}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+.brand h1{font-family:var(--f-display);font-size:24px;margin:0;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--ink-2);font-size:13.5px}
+.status{font-size:12.5px;color:var(--ink-3);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status .btn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.status .btn svg{width:14px;height:14px;fill:currentColor}
+.modal{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,var(--ink) 35%,transparent);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px 24px;overflow-y:auto}
+.modal-card{width:min(560px,100%);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.modal-card h2{font-family:var(--f-display);font-size:20px;margin:0}
+.modal-card label{font-size:12px;font-weight:600;color:var(--ink-2);letter-spacing:.03em;display:block;margin-bottom:4px}
+.modal-card input,.modal-card select.full{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 10px;background:var(--surface);font-family:var(--f-mono);font-size:13px}
+.modal-card ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--ink-2);font-size:14px}
+.modal-card a{color:var(--accent)}
+.keyrow{display:flex;gap:6px}
+.keyrow input{flex:1;min-width:0}
+.note{font-size:13px;color:var(--ink-2);background:var(--sunk);border-radius:7px;padding:8px 10px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+.dot.on{background:var(--m-done)} .dot.off{background:var(--m-compare)}
+
+/* overview */
+.overview{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px}
+.ov-title{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ov-title h2{font-family:var(--f-display);font-size:28px;margin:0;line-height:1.15;text-wrap:balance}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--sunk);color:var(--ink-2)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.ov-summary{margin:8px 0 0;color:var(--ink-2);max-width:68ch}
+.ov-io{margin-top:10px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--ink-2)}
+.ov-io b{color:var(--ink);font-weight:600}
+.cx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.cx div{padding:8px 10px;border-right:1px solid var(--line)}
+.cx div:last-child{border-right:0}
+.cx span{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.cx b{font-family:var(--f-mono);font-size:14px;white-space:nowrap;font-weight:600;font-variant-numeric:tabular-nums}
+.cx-note{font-size:13px;color:var(--ink-2);margin:8px 0 0}
+
+/* work area */
+.work{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;min-width:0}
+.ph{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ph h3{font-family:var(--f-display);font-size:15px;margin:0 auto 0 0;letter-spacing:.01em}
+select.sm,.btn{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:5px 9px;font-size:13px;cursor:pointer}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:8px 16px;font-size:14px}
+.btn.primary:hover{filter:brightness(1.08);background:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+
+.codebox{position:relative;height:460px;display:flex;font-family:var(--f-mono);font-variant-ligatures:none;font-size:13px;line-height:21px;background:var(--sunk)}
+.gutter{flex:none;width:44px;padding:10px 8px 10px 0;text-align:right;color:var(--ink-3);overflow:hidden;user-select:none;white-space:pre;font-variant-numeric:tabular-nums}
+#editor{flex:1;min-width:0;border:0;resize:none;background:transparent;padding:10px 12px 10px 6px;font:inherit;line-height:inherit;white-space:pre;overflow:auto;tab-size:4;outline:none}
+#trace{flex:1;min-width:0;overflow:auto;padding:10px 0}
+.ln{display:flex;white-space:pre;padding-right:12px;min-width:max-content}
+.ln .n{flex:none;width:44px;text-align:right;padding-right:10px;color:var(--ink-3);user-select:none;font-variant-numeric:tabular-nums}
+.ln .c{flex:1}
+.ln.cur{background:color-mix(in srgb,var(--m-active) 22%,transparent);box-shadow:inset 3px 0 0 var(--m-active)}
+.ln.cur .n{color:var(--ink);font-weight:700}
+.ln.seen .n{color:var(--ink-2)}
+.stale{position:absolute;left:10px;right:10px;bottom:10px;background:var(--warn-bg);color:var(--warn);font-family:var(--f-body);font-size:12.5px;padding:6px 10px;border-radius:7px}
+.hljs-keyword,.hljs-selector-tag,.hljs-meta .hljs-keyword{color:var(--hl-kw)}
+.hljs-string,.hljs-regexp,.hljs-char{color:var(--hl-str)}
+.hljs-number,.hljs-literal{color:var(--hl-num)}
+.hljs-comment,.hljs-quote{color:var(--hl-com);font-style:italic}
+.hljs-title,.hljs-title.function_,.hljs-function .hljs-title{color:var(--hl-fn)}
+.hljs-type,.hljs-built_in,.hljs-title.class_{color:var(--hl-type)}
+.hljs-meta{color:var(--hl-com)}
+
+.inputs{padding:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.inputs label{font-size:12px;font-weight:600;color:var(--ink-2);letter-spacing:.03em}
+#inputBox{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:7px 10px;font-family:var(--f-mono);font-size:13px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hint{font-size:12.5px;color:var(--ink-3)}
+.msg{font-size:13px;padding:8px 10px;border-radius:7px;background:var(--bad-bg);color:var(--bad)}
+.msg.info{background:var(--accent-soft);color:var(--accent)}
+
+/* stage */
+.stephead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.stepmeta{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;letter-spacing:.03em;text-transform:uppercase}
+.stepmeta .lnchip{font-family:var(--f-mono);text-transform:none;background:color-mix(in srgb,var(--m-active) 25%,transparent);color:var(--ink);padding:1px 7px;border-radius:5px}
+.steptitle{font-family:var(--f-display);font-size:19px;font-weight:600;margin:0}
+.stepexplain{margin:0;color:var(--ink-2);font-size:14px;max-width:72ch}
+.stage{position:relative;min-height:330px;padding:16px;display:flex;flex-direction:column;gap:14px;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px}
+.ds{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.dsh{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.dsh b{font-family:var(--f-mono);font-size:13px}
+.dsh span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.scrollx{overflow-x:auto;padding-bottom:4px}
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:color-mix(in srgb,var(--paper) 86%,transparent);z-index:3;text-align:center;padding:20px}
+.spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.overlay p{margin:0;color:var(--ink-2);font-size:14px}
+
+/* array */
+.arr{display:flex;gap:4px;align-items:flex-end;min-width:max-content}
+.cell{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:42px}
+.cell .ix{font-size:10.5px;color:var(--ink-3);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.box{min-width:42px;height:42px;padding:0 6px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--line);border-radius:7px;background:var(--surface);font-family:var(--f-mono);font-size:14px;font-weight:500;transition:background .25s,border-color .25s,transform .25s}
+.cell.ghost .box{border-style:dashed;background:transparent;color:var(--ink-3)}
+.bararea{height:120px;display:flex;align-items:flex-end}
+.bar{width:34px;border-radius:5px 5px 2px 2px;background:var(--accent-soft);border:1.5px solid color-mix(in srgb,var(--accent) 40%,transparent);display:flex;align-items:flex-start;justify-content:center;font-family:var(--f-mono);font-size:11.5px;padding-top:2px;transition:height .3s,background .25s}
+.ptrs{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:18px}
+.ptr{font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--accent);line-height:1.1;white-space:nowrap}
+.ptr::before{content:"▲ ";font-size:8px}
+.m-active{background:color-mix(in srgb,var(--m-active) 30%,var(--surface))!important;border-color:var(--m-active)!important}
+.m-compare{background:color-mix(in srgb,var(--m-compare) 24%,var(--surface))!important;border-color:var(--m-compare)!important}
+.m-swap{background:color-mix(in srgb,var(--m-swap) 26%,var(--surface))!important;border-color:var(--m-swap)!important}
+.m-done{background:color-mix(in srgb,var(--m-done) 22%,var(--surface))!important;border-color:var(--m-done)!important}
+.m-found{background:var(--m-found)!important;border-color:var(--m-found)!important;color:#fff!important}
+.m-visit{background:color-mix(in srgb,var(--m-visit) 22%,var(--surface))!important;border-color:var(--m-visit)!important}
+.m-dim{opacity:.4}
+.m-error{background:color-mix(in srgb,var(--m-error) 25%,var(--surface))!important;border-color:var(--m-error)!important}
+.box.m-active,.bar.m-active{transform:translateY(-3px)}
+
+/* matrix */
+.mx{border-collapse:separate;border-spacing:3px;font-family:var(--f-mono);font-size:13px}
+.mx td,.mx th{min-width:34px;height:32px;text-align:center;border-radius:5px}
+.mx td{border:1.5px solid var(--line);background:var(--surface)}
+.mx th{font-weight:500;color:var(--ink-3);font-size:11px}
+
+/* list, stack, queue, map */
+.ll{display:flex;align-items:flex-start;gap:0;min-width:max-content}
+.lln{display:flex;flex-direction:column;align-items:center;gap:3px}
+.arrow{color:var(--ink-3);font-family:var(--f-mono);padding:10px 6px 0}
+.nullbox{font-family:var(--f-mono);color:var(--ink-3);padding-top:10px}
+.stack{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.stack .box{min-width:120px;justify-content:flex-start;height:32px;font-size:13px}
+.stack .lbl,.qlbl{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.queue{display:flex;gap:4px;align-items:center;min-width:max-content}
+.map{display:flex;flex-wrap:wrap;gap:6px}
+.kv{display:flex;border:1.5px solid var(--line);border-radius:7px;overflow:hidden;font-family:var(--f-mono);font-size:13px;background:var(--surface)}
+.kv span{padding:4px 8px}
+.kv span+span{border-left:1px solid var(--line);background:var(--sunk)}
+.empty{font-size:12.5px;color:var(--ink-3);font-style:italic}
+
+/* svg */
+svg.viz{display:block;max-width:none}
+svg.viz text{font-family:var(--f-mono)}
+.n-c{fill:var(--surface);stroke:var(--line);stroke-width:1.8;transition:fill .25s,stroke .25s}
+.n-t{fill:var(--ink);font-size:13px;font-weight:500}
+.e-l{stroke:var(--ink-3);stroke-width:1.5;fill:none}
+.e-w{fill:var(--ink-2);font-size:11px}
+.p-t{fill:var(--accent);font-size:11px;font-weight:700}
+.sv-active .n-c{fill:color-mix(in srgb,var(--m-active) 35%,var(--surface));stroke:var(--m-active)}
+.sv-compare .n-c{fill:color-mix(in srgb,var(--m-compare) 28%,var(--surface));stroke:var(--m-compare)}
+.sv-swap .n-c{fill:color-mix(in srgb,var(--m-swap) 28%,var(--surface));stroke:var(--m-swap)}
+.sv-done .n-c{fill:color-mix(in srgb,var(--m-done) 26%,var(--surface));stroke:var(--m-done)}
+.sv-visit .n-c{fill:color-mix(in srgb,var(--m-visit) 26%,var(--surface));stroke:var(--m-visit)}
+.sv-found .n-c{fill:var(--m-found);stroke:var(--m-found)} .sv-found .n-t{fill:#fff}
+.sv-error .n-c{fill:color-mix(in srgb,var(--m-error) 28%,var(--surface));stroke:var(--m-error)}
+.sv-dim{opacity:.38}
+.e-active{stroke:var(--m-active);stroke-width:3} .e-done,.e-found{stroke:var(--m-done);stroke-width:3}
+.e-compare{stroke:var(--m-compare);stroke-width:3} .e-visit{stroke:var(--m-visit);stroke-width:2.5} .e-dim{opacity:.3}
+
+/* vars + transport */
+.vars{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-top:1px solid var(--line)}
+.var{font-family:var(--f-mono);font-size:12.5px;padding:3px 8px;border-radius:6px;background:var(--sunk);border:1px solid transparent;max-width:100%;overflow-wrap:anywhere}
+.var i{font-style:normal;color:var(--ink-3)}
+.var.changed{border-color:var(--m-active);background:color-mix(in srgb,var(--m-active) 16%,var(--sunk))}
+.transport{display:flex;align-items:center;gap:6px;padding:10px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.ic{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
+.ic:hover{background:var(--sunk)}
+.ic.play{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.ic svg{width:15px;height:15px;fill:currentColor}
+#scrub{flex:1;min-width:120px;accent-color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;padding:0 14px 12px;font-size:11.5px;color:var(--ink-3)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;border:1.5px solid}
+
+/* report */
+.report{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:18px;align-items:start}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;min-width:0}
+.sec h3{font-family:var(--f-display);font-size:18px;margin:0 0 4px}
+.sec .sub{margin:0 0 12px;font-size:13px;color:var(--ink-3)}
+.ecs{display:flex;flex-direction:column;gap:10px}
+.ec{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}
+.ec-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ec-h b{font-weight:600}
+.st{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.st.ok{background:var(--ok-bg);color:var(--ok)} .st.risky{background:var(--warn-bg);color:var(--warn)} .st.bug{background:var(--bad-bg);color:var(--bad)}
+.ec-io{font-size:13px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px;grid-column:1}
+.ec-io code{background:var(--sunk);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.ec-why{font-size:13px;color:var(--ink-2);margin:2px 0 0;grid-column:1}
+.ec .btn{grid-column:2;grid-row:1/span 3;align-self:start;white-space:nowrap}
+.side{display:flex;flex-direction:column;gap:18px;min-width:0}
+ul.pts{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;color:var(--ink-2);font-size:14px}
+ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
+#askBox{width:100%;min-height:70px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--surface);resize:vertical}
+.answer{margin-top:10px;font-size:14px;color:var(--ink-2);display:flex;flex-direction:column;gap:6px}
+.answer p{margin:0} .answer ul{margin:0;padding-left:18px}
+.answer code{background:var(--sunk);padding:1px 4px;border-radius:4px}
+.answer pre{background:var(--sunk);padding:8px 10px;border-radius:6px;overflow-x:auto;margin:0;font-family:var(--f-mono);font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:12.5px;background:var(--surface);cursor:pointer;color:var(--ink-2)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
+/* problem library */
+.libbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
+.libbar .btn{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+.libbar .btn svg{width:15px;height:15px;fill:currentColor}
+.curprob{display:flex;align-items:center;gap:8px;min-width:0;flex:1;font-size:14px}
+.curprob b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.curprob a{font-size:12.5px;color:var(--accent);text-decoration:none;white-space:nowrap}
+.curprob a:hover{text-decoration:underline}
+.lvl{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.lvl.easy{color:var(--ok)} .lvl.medium{color:var(--warn)} .lvl.hard{color:var(--bad)}
+.free{background:var(--ok-bg);color:var(--ok)}
+.drawer{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,var(--ink) 35%,transparent);display:flex}
+.drawer-panel{width:min(440px,100%);height:100%;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.dh{display:flex;gap:8px;padding:12px;border-bottom:1px solid var(--line);align-items:center}
+.dh input{flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;padding:7px 10px;background:var(--surface)}
+.levels{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.levels .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.liblist{overflow-y:auto;flex:1;padding:4px 0 24px}
+.lt{font-family:var(--f-display);font-size:13px;font-weight:600;color:var(--ink-2);padding:12px 14px 4px;display:flex;justify-content:space-between}
+.lt span{font-family:var(--f-body);font-weight:400;color:var(--ink-3);font-size:12px}
+.li{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;padding:7px 14px;cursor:pointer;font-size:14px}
+.li:hover{background:var(--sunk)}
+.li[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.li .t{flex:1;min-width:0}
+.li .lvl{flex:none}
+.edgebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 14px;background:var(--warn-bg);color:var(--warn);font-size:13px;border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
+.edgebar .btn{margin-left:auto;padding:3px 9px;font-size:12.5px}
+
+@media (max-width:980px){
+  .work,.report,.overview{grid-template-columns:minmax(0,1fr)}
+  .codebox{height:340px}
+}
+@media (max-width:520px){
+  .wrap{padding-inline:16px}
+  .cx{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cx div:nth-child(2){border-right:0} .cx div:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .ec{grid-template-columns:minmax(0,1fr)} .ec .btn{grid-column:1;grid-row:auto;justify-self:start}
+  .ov-title h2{font-size:23px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:2s!important}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" fill="var(--accent)"/><circle cx="11" cy="21" r="3.2" fill="var(--accent-ink)"/><circle cx="23" cy="21" r="3.2" fill="var(--accent-ink)"/><circle cx="17" cy="11" r="3.2" fill="var(--m-active)"/><path d="M15.3 13.6 12.6 18.4M18.7 13.6l2.7 4.8" stroke="var(--accent-ink)" stroke-width="1.8"/></svg>
+      <div><h1>AlgoScope</h1><p>Paste code in any language. Watch it run, step by step, and see where it breaks.</p></div>
+    </div>
+    <div class="status" id="status"><span class="dot" id="dot"></span><span id="statusText">Checking AI access…</span><button class="btn" id="aiOpen" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6zM6.9 1h2.2l.4 1.9 1.4.6 1.6-1.1 1.6 1.6-1.1 1.6.6 1.4 1.9.4v2.2l-1.9.4-.6 1.4 1.1 1.6-1.6 1.6-1.6-1.1-1.4.6-.4 1.9H6.9l-.4-1.9-1.4-.6-1.6 1.1-1.6-1.6 1.1-1.6-.6-1.4L.5 9.1V6.9l1.9-.4.6-1.4-1.1-1.6 1.6-1.6 1.6 1.1 1.4-.6z"/></svg>AI settings</button></div>
+  </header>
+
+  <nav class="libbar" id="libbar" hidden>
+    <button class="btn" id="libOpen" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12v2H2zM2 7h12v2H2zM2 11h12v2H2z"/></svg>Problem sheet <span id="libCount" class="hint"></span></button>
+    <div class="curprob" id="curProb"></div>
+    <button class="ic" id="probPrev" type="button" aria-label="Previous problem"><svg viewBox="0 0 16 16"><path d="M11 2v12L3 8z"/></svg></button>
+    <button class="ic" id="probNext" type="button" aria-label="Next problem"><svg viewBox="0 0 16 16"><path d="M5 2v12l8-6z"/></svg></button>
+  </nav>
+  <div class="drawer" id="drawer" hidden>
+    <div class="drawer-panel" role="dialog" aria-label="Problem sheet">
+      <div class="dh"><input id="libSearch" type="search" placeholder="Search problems or topics" aria-label="Search problems"><button class="btn" id="libClose" type="button">Close</button></div>
+      <div class="levels" id="levels">
+        <button type="button" class="chip" data-l="all" aria-pressed="true">All</button>
+        <button type="button" class="chip" data-l="easy" aria-pressed="false">Easy</button>
+        <button type="button" class="chip" data-l="medium" aria-pressed="false">Medium</button>
+        <button type="button" class="chip" data-l="hard" aria-pressed="false">Hard</button>
+      </div>
+      <div class="liblist" id="libList"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="aiModal" hidden>
+    <div class="modal-card" role="dialog" aria-labelledby="aiTitle">
+      <h2 id="aiTitle">AI for your own code</h2>
+      <p class="note">The 159 problems from the sheet never need a key. A key is only used when you paste your own code and press <b>Visualize</b>, or use <b>Ask</b>.</p>
+      <p class="note" id="aiInClaude" hidden>You're viewing this inside claude.ai, so your own code is traced with your Claude account. claude.ai pages can't contact other AI services; to use an OpenRouter key, open the GitHub Pages version of AlgoScope.</p>
+      <div>
+        <label for="orKey">OpenRouter API key</label>
+        <div class="keyrow"><input id="orKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-v1-…"><button class="btn" id="orShow" type="button">Show</button></div>
+        <p class="hint" style="margin:6px 0 0">Saved only in this browser (localStorage) and sent only to openrouter.ai. It is never uploaded anywhere else.</p>
+      </div>
+      <div>
+        <label for="orModel">Free model</label>
+        <select class="full" id="orModel"><option value="">Add a key to load the free models</option></select>
+        <p class="hint" id="orModelHint" style="margin:6px 0 0"></p>
+      </div>
+      <div>
+        <label>Get a free key (about a minute)</label>
+        <ol>
+          <li>Go to <a href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a> and sign in (Google or GitHub works). No card needed.</li>
+          <li>Open <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Settings → API Keys</a> and press <b>Create key</b>. Give it a name like "AlgoScope".</li>
+          <li>Copy the key (it starts with <code>sk-or-v1-</code>). It's shown only once.</li>
+          <li>Paste it above and press <b>Save</b>, then pick a model ending in <code>:free</code>.</li>
+        </ol>
+      </div>
+      <p class="note">Free limits: about 20 requests a minute and 50 a day (1,000 a day once you've ever bought $10 of credits). One trace is one request. Free models are less accurate than Claude, so double-check surprising traces.</p>
+      <div class="row"><button class="btn primary" id="aiSave" type="button">Save</button><button class="btn" id="aiClear" type="button">Remove key</button><button class="btn ghost" id="aiClose" type="button">Close</button></div>
+      <p class="msg info" id="aiMsg" hidden></p>
+    </div>
+  </div>
+
+  <section class="overview" id="overview" aria-live="polite"></section>
+
+  <main class="work">
+    <section class="panel">
+      <div class="ph">
+        <h3 id="codeTitle">Your code</h3>
+        <select class="sm" id="examples" aria-label="Load an example">
+          <option value="">Load example…</option>
+        </select>
+        <select class="sm" id="lang" aria-label="Language">
+          <option value="auto">Auto-detect</option>
+          <option>Java</option><option>Python</option><option>C++</option><option>JavaScript</option><option>TypeScript</option>
+          <option>C</option><option>C#</option><option>Go</option><option>Rust</option>
+          <option>Kotlin</option><option>Swift</option><option>Ruby</option><option>PHP</option><option>Scala</option><option>Other</option>
+        </select>
+        <button class="btn" id="modeBtn" type="button">Edit code</button>
+      </div>
+      <div class="codebox">
+        <div class="gutter" id="gutter" hidden></div>
+        <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Code editor" hidden placeholder="Paste a function, a class, or a whole program…"></textarea>
+        <div id="trace" aria-label="Code being traced"></div>
+        <div class="stale" id="stale" hidden>The code changed since this trace. Press Visualize to trace the new version.</div>
+      </div>
+      <div class="inputs">
+        <div>
+          <label for="inputBox">Input to trace (optional)</label>
+          <input id="inputBox" type="text" placeholder="e.g. arr = [5, 1, 4, 2], target = 4 — leave blank and Claude picks one">
+        </div>
+        <div class="row">
+          <button class="btn primary" id="runBtn" type="button">Visualize</button>
+          <button class="btn" id="stopBtn" type="button" hidden>Stop</button>
+          <select class="sm" id="tier" aria-label="Trace depth">
+            <option value="default">Standard trace</option>
+            <option value="complex">Deep trace (slower, more careful)</option>
+            <option value="quick">Quick trace (fastest)</option>
+          </select>
+        </div>
+        <div class="msg" id="err" hidden></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Visualization">
+      <div class="edgebar" id="edgeBar" hidden><span>Edge case: <b id="edgeName"></b></span><button class="btn" id="edgeBack" type="button">Back to main trace</button></div>
+      <div class="stephead">
+        <div class="stepmeta"><span id="stepCount">Step 0 of 0</span><span class="lnchip" id="stepLine">line –</span></div>
+        <p class="steptitle" id="stepTitle">–</p>
+        <p class="stepexplain" id="stepExplain"></p>
+      </div>
+      <div class="stage" id="stage"></div>
+      <div class="vars" id="vars"></div>
+      <div class="transport">
+        <button class="ic" id="bFirst" type="button" aria-label="First step"><svg viewBox="0 0 16 16"><path d="M3 2h2v12H3zM14 2v12L6 8z"/></svg></button>
+        <button class="ic" id="bPrev" type="button" aria-label="Previous step"><svg viewBox="0 0 16 16"><path d="M12 2v12L4 8z"/></svg></button>
+        <button class="ic play" id="bPlay" type="button" aria-label="Play"><svg viewBox="0 0 16 16" id="playIcon"><path d="M4 2v12l10-6z"/></svg></button>
+        <button class="ic" id="bNext" type="button" aria-label="Next step"><svg viewBox="0 0 16 16"><path d="M4 2v12l8-6z"/></svg></button>
+        <button class="ic" id="bLast" type="button" aria-label="Last step"><svg viewBox="0 0 16 16"><path d="M11 2h2v12h-2zM2 2v12l8-6z"/></svg></button>
+        <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Scrub through steps">
+        <select class="sm" id="speed" aria-label="Playback speed">
+          <option value="2200">0.5×</option><option value="1300" selected>1×</option><option value="700">2×</option><option value="350">4×</option>
+        </select>
+      </div>
+      <div class="legend">
+        <span><i style="background:color-mix(in srgb,var(--m-active) 30%,var(--surface));border-color:var(--m-active)"></i>current</span>
+        <span><i style="background:color-mix(in srgb,var(--m-compare) 24%,var(--surface));border-color:var(--m-compare)"></i>comparing</span>
+        <span><i style="background:color-mix(in srgb,var(--m-swap) 26%,var(--surface));border-color:var(--m-swap)"></i>swapping</span>
+        <span><i style="background:color-mix(in srgb,var(--m-visit) 22%,var(--surface));border-color:var(--m-visit)"></i>visited</span>
+        <span><i style="background:color-mix(in srgb,var(--m-done) 22%,var(--surface));border-color:var(--m-done)"></i>done</span>
+        <span><i style="background:var(--m-found);border-color:var(--m-found)"></i>result</span>
+        <span><i style="background:var(--m-dim);border-color:var(--m-dim)"></i>ruled out</span>
+      </div>
+    </section>
+  </main>
+
+  <section class="report">
+    <div class="sec">
+      <h3>Edge cases</h3>
+      <p class="sub">How this exact code behaves on tricky inputs. Trace any of them to watch it happen.</p>
+      <div class="ecs" id="ecs"></div>
+    </div>
+    <div class="side">
+      <div class="sec">
+        <h3>How it works</h3>
+        <ul class="pts" id="ideas"></ul>
+      </div>
+      <div class="sec">
+        <h3>Common pitfalls</h3>
+        <ul class="pts" id="pitfalls"></ul>
+      </div>
+      <div class="sec">
+        <h3>Ask about this code</h3>
+        <p class="sub">Questions use your code and the current step as context.</p>
+        <textarea id="askBox" placeholder="Why does the loop use lo <= hi instead of lo < hi?"></textarea>
+        <div class="chips" id="askChips"></div>
+        <div class="row" style="margin-top:8px"><button class="btn primary" id="askBtn" type="button">Ask</button><button class="btn" id="askStop" type="button" hidden>Stop</button></div>
+        <div class="answer" id="answer"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- examples ---------- */
+const EXAMPLES = {
+  "Binary search · Python": {lang:"Python", code:
+`def binary_search(arr, target):
+    lo, hi = 0, len(arr) - 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return -1
+
+print(binary_search([2, 5, 8, 12, 16, 23, 38, 56, 72, 91], 23))`},
+  "BFS on a graph · JavaScript": {lang:"JavaScript", code:
+`function bfs(graph, start) {
+  const visited = new Set([start]);
+  const queue = [start];
+  const order = [];
+  while (queue.length > 0) {
+    const node = queue.shift();
+    order.push(node);
+    for (const next of graph[node]) {
+      if (!visited.has(next)) {
+        visited.add(next);
+        queue.push(next);
+      }
+    }
+  }
+  return order;
+}
+
+const graph = { A: ["B", "C"], B: ["A", "D"], C: ["A", "D", "E"], D: ["B", "C"], E: ["C"] };
+console.log(bfs(graph, "A"));`},
+  "Reverse a linked list · Java": {lang:"Java", code:
+`class ListNode {
+    int val; ListNode next;
+    ListNode(int v) { val = v; }
+}
+
+class Solution {
+    public ListNode reverseList(ListNode head) {
+        ListNode prev = null;
+        ListNode curr = head;
+        while (curr != null) {
+            ListNode next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+        return prev;
+    }
+}`},
+  "Quick sort · C++": {lang:"C++", code:
+`#include <vector>
+using namespace std;
+
+int partition(vector<int>& a, int lo, int hi) {
+    int pivot = a[hi];
+    int i = lo - 1;
+    for (int j = lo; j < hi; j++) {
+        if (a[j] <= pivot) {
+            i++;
+            swap(a[i], a[j]);
+        }
+    }
+    swap(a[i + 1], a[hi]);
+    return i + 1;
+}
+
+void quickSort(vector<int>& a, int lo, int hi) {
+    if (lo < hi) {
+        int p = partition(a, lo, hi);
+        quickSort(a, lo, p - 1);
+        quickSort(a, p + 1, hi);
+    }
+}`},
+  "Coin change DP · Go": {lang:"Go", code:
+`func coinChange(coins []int, amount int) int {
+    dp := make([]int, amount+1)
+    for i := 1; i <= amount; i++ {
+        dp[i] = amount + 1
+        for _, c := range coins {
+            if c <= i && dp[i-c]+1 < dp[i] {
+                dp[i] = dp[i-c] + 1
+            }
+        }
+    }
+    if dp[amount] > amount {
+        return -1
+    }
+    return dp[amount]
+}`},
+  "BST insert · Python": {lang:"Python", code:
+`class Node:
+    def __init__(self, val):
+        self.val = val
+        self.left = None
+        self.right = None
+
+def insert(root, val):
+    if root is None:
+        return Node(val)
+    if val < root.val:
+        root.left = insert(root.left, val)
+    else:
+        root.right = insert(root.right, val)
+    return root
+
+root = None
+for v in [8, 3, 10, 1, 6, 14, 4]:
+    root = insert(root, v)`}
+};
+
+/* ---------- demo trace (binary search), shown before anything is analyzed ---------- */
+const DA = [2,5,8,12,16,23,38,56,72,91];
+const dArr = (ptrs, marks) => ({kind:"array", name:"arr", values:DA, pointers:ptrs||{}, marks:marks||{}});
+const range = (a,b,m) => { const o={}; for(let i=a;i<=b;i++) o[i]=m; return o; };
+const stack1 = {kind:"stack", name:"call stack", values:["<module>"]};
+const stack2 = {kind:"stack", name:"call stack", values:["<module>","binary_search(arr, 23)"]};
+const DEMO = {
+  title:"Binary Search", category:"Searching · Divide and conquer", language:"Python", example:true,
+  summary:"Finds a target in a sorted array by checking the middle element and throwing away the half that cannot contain the target. Each comparison halves the search window, so even a million elements need about 20 checks.",
+  input:"arr = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91], target = 23", output:"5 (the index of 23)",
+  complexity:{best:"O(1)", average:"O(log n)", worst:"O(log n)", space:"O(1)", note:"Best case is when the very first middle element is the target. Iterative, so no recursion stack."},
+  intuition:[
+    "The window `[lo, hi]` always contains the target if it exists anywhere in the array.",
+    "Compare with the middle: if `arr[mid] < target`, everything left of `mid` is too small, so move `lo` past it.",
+    "If `arr[mid] > target`, everything right of `mid` is too big, so move `hi` before it.",
+    "The loop stops when the window is empty (`lo > hi`), which means the target is not there."
+  ],
+  pitfalls:[
+    "Writing `while lo < hi` skips the last one-element window and misses targets at the boundary.",
+    "Setting `lo = mid` instead of `mid + 1` can loop forever when `hi = lo + 1`.",
+    "In Java/C++, `(lo + hi) / 2` can overflow for huge arrays; use `lo + (hi - lo) / 2`.",
+    "The array must be sorted. On unsorted input it returns wrong answers without any error."
+  ],
+  steps:[
+    {line:13, title:"Call binary_search", explain:"The program calls `binary_search` with a sorted array of 10 numbers and `target = 23`.", vars:{target:23}, structures:[dArr(), stack1]},
+    {line:2, title:"Set up the window", explain:"`lo = 0` and `hi = len(arr) - 1 = 9`. The whole array is still in play.", vars:{target:23, lo:0, hi:9}, structures:[dArr({lo:0,hi:9}), stack2]},
+    {line:3, title:"Check the loop condition", explain:"`lo <= hi` is `0 <= 9`, true. The window is not empty, so keep searching.", vars:{target:23, lo:0, hi:9}, structures:[dArr({lo:0,hi:9}), stack2]},
+    {line:4, title:"Pick the middle", explain:"`mid = (0 + 9) // 2 = 4`. Look at `arr[4] = 16`.", vars:{target:23, lo:0, hi:9, mid:4}, structures:[dArr({lo:0,hi:9,mid:4},{4:"active"}), stack2]},
+    {line:5, title:"Is it the target?", explain:"`arr[4] = 16` is not equal to 23.", vars:{target:23, lo:0, hi:9, mid:4, "arr[mid]":16}, structures:[dArr({lo:0,hi:9,mid:4},{4:"compare"}), stack2]},
+    {line:7, title:"Too small, go right", explain:"`16 < 23`, so the target can only be to the right of index 4.", vars:{target:23, lo:0, hi:9, mid:4, "arr[mid]":16}, structures:[dArr({lo:0,hi:9,mid:4},{...range(0,3,"dim"),4:"compare"}), stack2]},
+    {line:8, title:"Move lo past mid", explain:"`lo = mid + 1 = 5`. Indices 0–4 are ruled out: half the array gone in one check.", vars:{target:23, lo:5, hi:9, mid:4}, structures:[dArr({lo:5,hi:9},range(0,4,"dim")), stack2]},
+    {line:3, title:"Loop again", explain:"`5 <= 9` is true. Five elements left.", vars:{target:23, lo:5, hi:9, mid:4}, structures:[dArr({lo:5,hi:9},range(0,4,"dim")), stack2]},
+    {line:4, title:"New middle", explain:"`mid = (5 + 9) // 2 = 7`. Look at `arr[7] = 56`.", vars:{target:23, lo:5, hi:9, mid:7}, structures:[dArr({lo:5,hi:9,mid:7},{...range(0,4,"dim"),7:"active"}), stack2]},
+    {line:7, title:"Too big this time", explain:"`56` is not 23 and not less than 23, so the `else` branch runs.", vars:{target:23, lo:5, hi:9, mid:7, "arr[mid]":56}, structures:[dArr({lo:5,hi:9,mid:7},{...range(0,4,"dim"),7:"compare"}), stack2]},
+    {line:10, title:"Move hi before mid", explain:"`hi = mid - 1 = 6`. Indices 7–9 are ruled out. Only two candidates remain.", vars:{target:23, lo:5, hi:6, mid:7}, structures:[dArr({lo:5,hi:6},{...range(0,4,"dim"),...range(7,9,"dim")}), stack2]},
+    {line:4, title:"Middle of two", explain:"`5 <= 6`, so loop. `mid = (5 + 6) // 2 = 5`. Look at `arr[5] = 23`.", vars:{target:23, lo:5, hi:6, mid:5}, structures:[dArr({lo:5,hi:6,mid:5},{...range(0,4,"dim"),5:"active",...range(7,9,"dim")}), stack2]},
+    {line:5, title:"Found it", explain:"`arr[5] = 23` equals the target.", vars:{target:23, lo:5, hi:6, mid:5, "arr[mid]":23}, structures:[dArr({lo:5,hi:6,mid:5},{...range(0,4,"dim"),5:"found",...range(7,9,"dim")}), stack2]},
+    {line:6, title:"Return 5", explain:"The function returns index `5` after only 3 comparisons. A linear scan would have needed 6.", vars:{target:23, result:5}, structures:[dArr({mid:5},{...range(0,4,"dim"),5:"found",...range(6,9,"dim")}), stack1]}
+  ],
+  edgeCases:[
+    {name:"Empty array", input:"arr = [], target = 5", expected:"-1", actual:"-1", status:"ok", why:"`hi = -1`, so `lo <= hi` is false at once and the loop never runs."},
+    {name:"Target smaller than everything", input:"arr = [2, 5, 8], target = 1", expected:"-1", actual:"-1", status:"ok", why:"`hi` keeps moving left until it drops below `lo = 0`."},
+    {name:"Target larger than everything", input:"arr = [2, 5, 8], target = 99", expected:"-1", actual:"-1", status:"ok", why:"`lo` walks right until it passes `hi`, ending at `lo = 3`, one past the end. It is never used as an index there."},
+    {name:"Single element", input:"arr = [7], target = 7", expected:"0", actual:"0", status:"ok", why:"`lo = hi = 0`, the condition `0 <= 0` holds, `mid = 0` matches."},
+    {name:"Duplicates", input:"arr = [1, 3, 3, 3, 5], target = 3", expected:"first index, 1", actual:"2", status:"risky", why:"It returns whichever copy the middle lands on. Finding the first or last copy needs a lower-bound variant that keeps searching after a match."},
+    {name:"Unsorted input", input:"arr = [9, 2, 7, 4], target = 9", expected:"0", actual:"-1", status:"bug", why:"The halving logic assumes sorted order. On unsorted data it discards the half that holds the target and reports it missing."},
+    {name:"Very large arrays (ported to Java/C++)", input:"lo = 1_500_000_000, hi = 2_000_000_000", expected:"valid mid", actual:"integer overflow in lo + hi", status:"risky", why:"Python integers never overflow, but a direct port to 32-bit ints breaks. Use `lo + (hi - lo) // 2`."}
+  ]
+};
+
+/* ---------- state ---------- */
+const S = { analysis:null, base:null, edge:null, lang:"Java", step:0, playing:false, timer:null, mode:"trace", ctl:null, askCtl:null };
+const LIB = { index:null, files:{}, cur:null, level:"all" };
+const LIB_LANGS = ["Java", "Python", "C++"];
+/* The library's traces are recorded from the Java run; other languages map each step to their own line. */
+function libView(){
+  const b = S.base, e = S.edge, L = S.lang;
+  const alt = L !== "Java" && b.alt && b.alt[L];
+  const steps = e ? e.steps : b.steps;
+  return {...b, language: alt ? L : "Java", code: alt ? alt.code : b.code,
+    steps: alt ? steps.map(st => ({...st, line: alt.lines[st.line] || 0})) : steps,
+    input: e ? e.input : b.input, output: e ? e.actual : b.output, capped: e ? !!e.capped : b.capped};
+}
+/* ---------- AI access: Claude inside claude.ai, otherwise the viewer's own OpenRouter key ---------- */
+const IN_CLAUDE = !!(window.claude && typeof window.claude.use === "function");
+let sampleFn = null;
+const samplePromise = IN_CLAUDE ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
+const KEYS = { key: "algoscope:openrouterKey", model: "algoscope:openrouterModel" };
+const local = {
+  get(k){ try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+  set(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} }
+};
+const AI = {
+  provider(){ return IN_CLAUDE ? (sampleFn ? "claude" : null) : (local.get(KEYS.key) ? "openrouter" : null); },
+  async ready(){ if (IN_CLAUDE) await samplePromise; return AI.provider(); },
+  async text(prompt, opts){
+    if (AI.provider() === "claude") return (await sampleFn(prompt, opts)).text;
+    return orStream(prompt, opts);
+  },
+  async json(prompt, opts){
+    if (AI.provider() === "claude") return sampleFn.json(prompt, opts);
+    const text = await orStream(prompt + "\n\nYour reply is parsed by a program: output one JSON object and nothing else.", opts);
+    return parseJSONLoose(text);
+  }
+};
+function parseJSONLoose(text){
+  const t = String(text || "").trim();
+  const tries = [t];
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/); if (fence) tries.push(fence[1]);
+  const a = t.indexOf("{"), b = t.lastIndexOf("}"); if (a >= 0 && b > a) tries.push(t.slice(a, b + 1));
+  for (const x of tries){ try { return JSON.parse(x); } catch {} }
+  throw {code: "invalid_json", text: t};
+}
+async function orStream(prompt, {signal, onText} = {}){
+  const key = local.get(KEYS.key), model = local.get(KEYS.model);
+  if (!key) throw {code: "no_key"};
+  if (!model) throw {code: "no_model"};
+  let res;
+  try {
+    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST", signal,
+      headers: {"Authorization": "Bearer " + key, "Content-Type": "application/json", "HTTP-Referer": location.origin, "X-Title": "AlgoScope"},
+      body: JSON.stringify({model, stream: true, max_tokens: 16000, messages: [{role: "user", content: prompt}]})
+    });
+  } catch (e) {
+    if (signal && signal.aborted) throw {code: "cancelled"};
+    throw {code: "network"};
+  }
+  if (!res.ok){
+    let msg = ""; try { msg = (await res.json()).error?.message || ""; } catch {}
+    throw {code: res.status === 401 ? "bad_key" : res.status === 402 ? "no_credit" : res.status === 429 ? "or_rate_limited" : "upstream_error", message: msg};
+  }
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = "", text = "";
+  try {
+    for (;;){
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      let nl;
+      while ((nl = buf.indexOf("\n")) >= 0){
+        const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
+        if (!line.startsWith("data:")) continue;
+        const data = line.slice(5).trim();
+        if (data === "[DONE]") continue;
+        let j; try { j = JSON.parse(data); } catch { continue; }
+        if (j.error) throw {code: "upstream_error", message: j.error.message, text};
+        const d = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+        if (d){ text += d; onText && onText({text, delta: d}); }
+      }
+    }
+  } catch (e) {
+    if (signal && signal.aborted) throw {code: "cancelled", text};
+    throw e && e.code ? e : {code: "upstream_error", text};
+  }
+  if (!text.trim()) throw {code: "empty_completion"};
+  return text;
+}
+function renderAIStatus(){
+  const p = AI.provider();
+  $("dot").className = "dot " + (p ? "on" : "off");
+  $("statusText").textContent = p === "claude" ? "Claude connected"
+    : p === "openrouter" ? "OpenRouter · " + (local.get(KEYS.model).replace(/:free$/, "") || "pick a model")
+    : IN_CLAUDE ? "Claude unavailable" : "Add a free key to trace your own code";
+  $("tier").hidden = p === "openrouter";
+}
+samplePromise.then(fn => { sampleFn = fn; renderAIStatus(); });
+async function loadFreeModels(){
+  const sel = $("orModel"), hint = $("orModelHint");
+  if (IN_CLAUDE) { sel.disabled = true; return; }
+  hint.textContent = "Loading the current free models…";
+  try {
+    const r = await fetch("https://openrouter.ai/api/v1/models");
+    /* Rank free models: drop safety classifiers, push tiny models down, prefer the largest parameter counts. */
+    const score = id => {
+      if (/safety|guard|embed/i.test(id)) return -1e9;
+      const sizes = [...id.matchAll(/(\d+(?:\.\d+)?)b(?![a-z])/gi)].map(x => parseFloat(x[1]));
+      let s = sizes.length ? Math.max(...sizes) : 100;
+      if (/small|mini|nano|lite|(^|[-/])xs([-:]|$)|lightning|preview/i.test(id)) s -= 1000;
+      return s;
+    };
+    const list = ((await r.json()).data || []).filter(m => /:free$/.test(m.id) && score(m.id) > -1e9)
+      .sort((a, b) => score(b.id) - score(a.id));
+    if (!list.length) throw 0;
+    const saved = local.get(KEYS.model);
+    const pick = saved && list.some(m => m.id === saved) ? saved : list[0].id;
+    sel.innerHTML = list.map(m => `<option value="${esc(m.id)}"${m.id === pick ? " selected" : ""}>${esc(m.name || m.id)}</option>`).join("");
+    hint.textContent = list.length + " free models available right now. If one is slow or busy, try another.";
+  } catch {
+    hint.textContent = "Couldn't load the model list. You can still type a model id ending in :free.";
+    sel.outerHTML = `<input id="orModel" type="text" placeholder="e.g. deepseek/deepseek-chat-v3-0324:free" value="${esc(local.get(KEYS.model))}">`;
+  }
+}
+function openAI(){
+  $("aiModal").hidden = false; $("aiInClaude").hidden = !IN_CLAUDE; $("aiMsg").hidden = true;
+  $("orKey").value = local.get(KEYS.key); $("orKey").disabled = IN_CLAUDE;
+  loadFreeModels(); $("orKey").focus();
+}
+function closeAI(){ $("aiModal").hidden = true; $("aiOpen").focus(); }
+$("aiOpen").onclick = openAI;
+$("aiClose").onclick = closeAI;
+$("aiModal").addEventListener("click", e => { if (e.target.id === "aiModal") closeAI(); });
+$("aiModal").addEventListener("keydown", e => { if (e.key === "Escape") closeAI(); e.stopPropagation(); });
+$("orShow").onclick = () => { const k = $("orKey"); k.type = k.type === "password" ? "text" : "password"; $("orShow").textContent = k.type === "password" ? "Show" : "Hide"; };
+$("aiSave").onclick = () => {
+  const key = $("orKey").value.trim(), model = ($("orModel").value || "").trim();
+  const m = $("aiMsg"); m.hidden = false;
+  if (key && !/^sk-or-/.test(key)){ m.className = "msg"; m.textContent = "That doesn't look like an OpenRouter key. It should start with sk-or-."; return; }
+  if (key && !model){ m.className = "msg"; m.textContent = "Pick a free model too."; return; }
+  local.set(KEYS.key, key); local.set(KEYS.model, model);
+  m.className = "msg info"; m.textContent = key ? "Saved in this browser. Paste your code and press Visualize." : "No key saved.";
+  renderAIStatus();
+};
+$("aiClear").onclick = () => { local.set(KEYS.key, ""); $("orKey").value = ""; const m = $("aiMsg"); m.hidden = false; m.className = "msg info"; m.textContent = "Key removed from this browser."; renderAIStatus(); };
+renderAIStatus();
+
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem("algoscope:v1") || "null"); } catch { return null; } },
+  set(v){ try { localStorage.setItem("algoscope:v1", JSON.stringify(v)); } catch {} }
+};
+function save(){
+  const custom = S.analysis && !S.analysis.example && !S.analysis.library;
+  store.set({ code: custom || !S.base ? $("editor").value : "", lang:$("lang").value, input:$("inputBox").value, tier:$("tier").value,
+    analysis: custom ? S.analysis : null, libId: S.base ? LIB.cur && LIB.cur.id : null, libLang: S.lang });
+}
+
+/* ---------- small markdown (inline only + bullets + fences) ---------- */
+function inline(s){
+  return esc(s).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>");
+}
+function md(text){
+  const out = []; const lines = String(text||"").split("\n"); let list = null, fence = null;
+  for (const l of lines){
+    if (/^```/.test(l)){ if (fence){ out.push("<pre>"+esc(fence.join("\n"))+"</pre>"); fence=null; } else { if(list){out.push("<ul>"+list.join("")+"</ul>");list=null;} fence=[]; } continue; }
+    if (fence){ fence.push(l); continue; }
+    const m = l.match(/^\s*[-*•]\s+(.*)/) || l.match(/^\s*\d+[.)]\s+(.*)/);
+    if (m){ (list = list||[]).push("<li>"+inline(m[1])+"</li>"); continue; }
+    if (list){ out.push("<ul>"+list.join("")+"</ul>"); list=null; }
+    if (l.trim()) out.push("<p>"+inline(l.replace(/^#+\s*/,""))+"</p>");
+  }
+  if (fence) out.push("<pre>"+esc(fence.join("\n"))+"</pre>");
+  if (list) out.push("<ul>"+list.join("")+"</ul>");
+  return out.join("");
+}
+
+/* ---------- code panel ---------- */
+const HL = {python:"python",javascript:"javascript",typescript:"typescript",java:"java","c++":"cpp",cpp:"cpp",c:"c","c#":"csharp",csharp:"csharp",go:"go",golang:"go",rust:"rust",kotlin:"kotlin",swift:"swift",ruby:"ruby",php:"php",scala:"scala"};
+function hlLang(name){ const k = HL[String(name||"").toLowerCase()]; return k && window.hljs && hljs.getLanguage(k) ? k : null; }
+function highlightLines(code, lang){
+  const lines = code.split("\n"); const L = hlLang(lang);
+  return lines.map(l => { if (!window.hljs || !l) return esc(l) || " ";
+    try { return L ? hljs.highlight(l,{language:L,ignoreIllegals:true}).value : esc(l); } catch { return esc(l); } });
+}
+function renderTraceCode(){
+  const a = S.analysis; if (!a) return;
+  const html = highlightLines(a.code, a.language);
+  const seen = new Set(a.steps.slice(0, S.step+1).map(s => s.line));
+  $("trace").innerHTML = html.map((h,i) => `<div class="ln${seen.has(i+1)?" seen":""}" data-l="${i+1}"><span class="n">${i+1}</span><span class="c">${h}</span></div>`).join("");
+}
+function markLine(){
+  const a = S.analysis; if (!a) return;
+  const st = a.steps[S.step] || {}; const box = $("trace");
+  box.querySelectorAll(".ln.cur").forEach(n => n.classList.remove("cur"));
+  box.querySelectorAll(".ln").forEach(n => { const l = +n.dataset.l; n.classList.toggle("seen", a.steps.slice(0,S.step+1).some(s => s.line === l)); });
+  const el = box.querySelector(`.ln[data-l="${st.line}"]`);
+  if (el){ el.classList.add("cur");
+    const top = el.offsetTop - box.offsetTop, h = box.clientHeight;
+    if (top < box.scrollTop + 30 || top > box.scrollTop + h - 50) box.scrollTo({top: Math.max(0, top - h/2.5), behavior:"smooth"}); }
+}
+function setMode(m){
+  S.mode = (m === "trace" && S.analysis) ? "trace" : "edit";
+  const edit = S.mode === "edit";
+  $("editor").hidden = !edit; $("gutter").hidden = !edit; $("trace").hidden = edit;
+  $("modeBtn").textContent = edit ? "Show trace" : "Edit code";
+  $("modeBtn").disabled = edit && !S.analysis;
+  $("codeTitle").textContent = edit ? "Your code" : "Tracing";
+  if (edit) syncGutter(); else { renderTraceCode(); markLine(); }
+  checkStale();
+}
+function syncGutter(){
+  const n = $("editor").value.split("\n").length;
+  $("gutter").textContent = Array.from({length:n},(_,i)=>i+1).join("\n");
+  $("gutter").scrollTop = $("editor").scrollTop;
+}
+function checkStale(){
+  const a = S.analysis;
+  $("stale").hidden = !(a && a.code.trim() !== $("editor").value.trim());
+}
+
+/* ---------- normalization of what Claude returns ---------- */
+const MARK = {active:"active",current:"active",highlight:"active",pivot:"active",focus:"active",
+  compare:"compare",comparing:"compare",check:"compare",checking:"compare",
+  swap:"swap",swapping:"swap",moved:"swap",changed:"swap",updated:"swap",new:"swap",insert:"swap",inserted:"swap",
+  done:"done",sorted:"done",processed:"done",finalized:"done",final:"done",settled:"done",
+  found:"found",match:"found",result:"found",answer:"found",path:"found",
+  visit:"visit",visited:"visit",queued:"visit",seen:"visit",frontier:"visit",
+  dim:"dim",excluded:"dim",inactive:"dim",discarded:"dim",ruled_out:"dim",removed:"dim",
+  error:"error",bug:"error",invalid:"error"};
+const mk = m => MARK[String(m||"").toLowerCase().replace(/[\s-]+/g,"_")] || (m ? "active" : "");
+function normMarks(m){
+  if (!m) return {};
+  if (Array.isArray(m)){ const o={}; m.forEach(x => { if (x && typeof x === "object"){ const k = x.index ?? x.id ?? x.key ?? x.cell; if (k!=null) o[String(k)] = x.mark || x.state || "active"; } else if (x!=null) o[String(x)] = "active"; }); return o; }
+  return m;
+}
+function normalize(raw, code, langSel){
+  const a = (raw && typeof raw === "object") ? raw : {};
+  const steps = (Array.isArray(a.steps) ? a.steps : []).filter(s => s && typeof s === "object").map(s => ({
+    line: Number(s.line) || 0, title: String(s.title || ""), explain: String(s.explain || s.explanation || ""),
+    vars: (s.vars && typeof s.vars === "object" && !Array.isArray(s.vars)) ? s.vars : {},
+    structures: (Array.isArray(s.structures) ? s.structures : []).filter(x => x && typeof x === "object")
+  }));
+  if (!steps.length) throw {code:"empty_trace"};
+  const cx = a.complexity || {}; const t = cx.time || {};
+  return {
+    title: a.title || "Your algorithm", category: a.category || "", language: a.language || (langSel !== "auto" ? langSel : ""),
+    summary: a.summary || "", input: a.input || "", output: a.output || "",
+    complexity: {best: cx.best || t.best || "–", average: cx.average || t.average || "–", worst: cx.worst || t.worst || "–", space: cx.space || "–", note: cx.note || ""},
+    intuition: Array.isArray(a.intuition) ? a.intuition.map(String) : [],
+    pitfalls: Array.isArray(a.pitfalls) ? a.pitfalls.map(String) : [],
+    edgeCases: (Array.isArray(a.edgeCases) ? a.edgeCases : []).filter(e => e && typeof e === "object"),
+    steps, code
+  };
+}
+
+/* ---------- formatting ---------- */
+function fmt(v){
+  if (v === null) return "null"; if (v === undefined) return "–";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  try { const s = JSON.stringify(v); return s.length > 80 ? s.slice(0,77) + "…" : s; } catch { return String(v); }
+}
+const markCls = m => { const k = mk(m); return k ? " m-" + k : ""; };
+function ptrIndex(ptrs){ const by = {}; for (const [name, at] of Object.entries(ptrs || {})){ if (at === null || at === undefined) continue; const k = String(at); (by[k] = by[k] || []).push(name); } return by; }
+
+/* ---------- structure renderers ---------- */
+function rArray(d){
+  const vals = Array.isArray(d.values) ? d.values : (typeof d.value === "string" ? d.value.split("") : []);
+  const marks = normMarks(d.marks), by = ptrIndex(d.pointers);
+  const ptrIdx = Object.keys(by).map(Number).filter(n => Number.isInteger(n));
+  const lo = Math.max(-1, Math.min(0, ...ptrIdx)), hi = Math.min(vals.length, Math.max(vals.length - 1, ...ptrIdx));
+  const nums = vals.filter(v => typeof v === "number");
+  const bars = (d.view === "bars") && nums.length === vals.length && vals.length > 0;
+  const max = Math.max(1, ...nums.map(Math.abs));
+  if (!vals.length && lo >= 0) return `<div class="empty">empty</div>`;
+  let h = `<div class="scrollx"><div class="arr">`;
+  for (let i = lo; i <= hi; i++){
+    const ghost = i < 0 || i >= vals.length;
+    const ptr = (by[i] || []).map(p => `<span class="ptr">${esc(p)}</span>`).join("");
+    const cls = ghost ? "" : markCls(marks[i]);
+    const body = ghost ? `<div class="box">·</div>`
+      : bars ? `<div class="bararea"><div class="bar${cls}" style="height:${Math.max(14, Math.abs(vals[i]) / max * 118)}px">${esc(fmt(vals[i]))}</div></div>`
+      : `<div class="box${cls}">${esc(fmt(vals[i]))}</div>`;
+    h += `<div class="cell${ghost ? " ghost" : ""}"><span class="ix">${i}</span>${body}<div class="ptrs">${ptr}</div></div>`;
+  }
+  return h + `</div></div>`;
+}
+function rMatrix(d){
+  const rows = Array.isArray(d.rows) ? d.rows : (Array.isArray(d.values) ? d.values : []);
+  const marks = normMarks(d.marks);
+  if (!rows.length) return `<div class="empty">empty</div>`;
+  const cols = Math.max(...rows.map(r => Array.isArray(r) ? r.length : 0));
+  const cl = Array.isArray(d.colLabels) ? d.colLabels : Array.from({length:cols}, (_, j) => j);
+  const rl = Array.isArray(d.rowLabels) ? d.rowLabels : rows.map((_, i) => i);
+  let h = `<div class="scrollx"><table class="mx"><tr><th></th>${cl.map(c => `<th>${esc(fmt(c))}</th>`).join("")}</tr>`;
+  rows.forEach((r, i) => {
+    h += `<tr><th>${esc(fmt(rl[i]))}</th>`;
+    for (let j = 0; j < cols; j++){ const v = Array.isArray(r) ? r[j] : undefined; h += `<td class="${markCls(marks[i + "," + j] || marks[i + "-" + j]).trim()}">${v === undefined ? "" : esc(fmt(v))}</td>`; }
+    h += `</tr>`;
+  });
+  return h + `</table></div>`;
+}
+function rList(d){
+  const nodes = Array.isArray(d.nodes) ? d.nodes : []; const marks = normMarks(d.marks), by = ptrIndex(d.pointers);
+  if (!nodes.length) return `<div class="empty">empty (null)</div>` + (Object.keys(by).length ? `<div class="hint">${Object.entries(d.pointers||{}).map(([k,v]) => esc(k + " = " + fmt(v))).join(" · ")}</div>` : "");
+  const map = {}; nodes.forEach(n => map[String(n.id)] = n);
+  const pointed = new Set(nodes.map(n => n.next == null ? null : String(n.next)));
+  const starts = []; const head = d.pointers && d.pointers.head != null ? String(d.pointers.head) : null;
+  if (head && map[head]) starts.push(head);
+  nodes.forEach(n => { if (!pointed.has(String(n.id))) starts.push(String(n.id)); });
+  nodes.forEach(n => starts.push(String(n.id)));
+  const seen = new Set(); const chains = [];
+  for (const s of starts){
+    if (seen.has(s)) continue; const chain = []; let cur = s, tail = "null";
+    while (cur != null && map[cur]){ if (seen.has(cur)){ tail = "→" + cur; break; } seen.add(cur); chain.push(cur); const nx = map[cur].next; cur = nx == null ? null : String(nx); }
+    chains.push({chain, tail});
+  }
+  return chains.map(({chain, tail}) => `<div class="scrollx"><div class="ll">` + chain.map(id => {
+    const n = map[id];
+    const ptr = (by[id] || []).map(p => `<span class="ptr">${esc(p)}</span>`).join("");
+    return `<div class="lln"><div class="box${markCls(marks[id])}">${esc(fmt(n.value ?? n.val ?? id))}</div><div class="ptrs">${ptr}</div></div><span class="arrow">→</span>`;
+  }).join("") + `<span class="nullbox">${tail === "null" ? "null" : "↺ " + esc(fmt(map[tail.slice(1)]?.value ?? tail.slice(1)))}</span></div></div>`).join("");
+}
+function rStack(d, isQueue){
+  const vals = Array.isArray(d.values) ? d.values : []; const marks = normMarks(d.marks);
+  if (!vals.length) return `<div class="empty">empty</div>`;
+  if (isQueue){
+    return `<div class="scrollx"><div class="queue"><span class="qlbl">front</span>${vals.map((v, i) => `<div class="box${markCls(marks[i])}">${esc(fmt(v))}</div>`).join("")}<span class="qlbl">back</span></div></div>`;
+  }
+  const items = vals.map((v, i) => ({v, i})).reverse();
+  return `<div class="stack"><span class="lbl">top</span>${items.map(({v, i}) => `<div class="box${markCls(marks[i])}">${esc(fmt(v))}</div>`).join("")}</div>`;
+}
+function rMap(d){
+  let entries = [];
+  if (Array.isArray(d.entries)) entries = d.entries.map(e => Array.isArray(e) ? e : (e && typeof e === "object" ? [e.key, e.value] : [e]));
+  else if (d.entries && typeof d.entries === "object") entries = Object.entries(d.entries);
+  else if (Array.isArray(d.values)) entries = d.values.map(v => [v]);
+  const marks = normMarks(d.marks);
+  if (!entries.length) return `<div class="empty">empty</div>`;
+  return `<div class="map">${entries.map(e => `<div class="kv${markCls(marks[String(e[0])])}"><span>${esc(fmt(e[0]))}</span>${e.length > 1 ? `<span>${esc(fmt(e[1]))}</span>` : ""}</div>`).join("")}</div>`;
+}
+function svgNode(x, y, label, mark, ptrs, r){
+  const k = mk(mark); const t = fmt(label); const fs = t.length > 3 ? 11 : 13;
+  return `<g class="${k ? "sv-" + k : ""}"><circle class="n-c" cx="${x}" cy="${y}" r="${r}"/><text class="n-t" x="${x}" y="${y + 4.5}" text-anchor="middle" style="font-size:${fs}px">${esc(t.length > 5 ? t.slice(0,4) + "…" : t)}</text>${ptrs && ptrs.length ? `<text class="p-t" x="${x + r + 3}" y="${y - r + 4}">${esc(ptrs.join(", "))}</text>` : ""}</g>`;
+}
+function treeLayout(nodes, rootId){
+  const map = {}; nodes.forEach(n => map[String(n.id)] = n);
+  const binary = nodes.some(n => "left" in n || "right" in n);
+  const S2 = v => v == null ? null : String(v);
+  const kids = n => binary ? [S2(n.left), S2(n.right)] : (Array.isArray(n.children) ? n.children.map(S2) : []);
+  const childSet = new Set(); nodes.forEach(n => kids(n).forEach(c => c && childSet.add(c)));
+  const pos = {}, visited = new Set(); let x = 0, maxD = 0;
+  function walk(id, d){
+    if (id == null || !map[id] || visited.has(id)) return; visited.add(id); maxD = Math.max(maxD, d);
+    const n = map[id];
+    if (binary){ walk(S2(n.left), d + 1); pos[id] = {x: x++, d}; walk(S2(n.right), d + 1); }
+    else { const ch = kids(n).filter(c => c && map[c] && !visited.has(c)); ch.forEach(c => walk(c, d + 1)); const xs = ch.filter(c => pos[c]).map(c => pos[c].x);
+      pos[id] = xs.length ? {x: xs.reduce((a, b) => a + b, 0) / xs.length, d} : {x: x++, d}; }
+  }
+  const root = S2(rootId) && map[S2(rootId)] ? S2(rootId) : (nodes.find(n => !childSet.has(String(n.id)))?.id ?? nodes[0]?.id);
+  walk(S2(root), 0); nodes.forEach(n => walk(String(n.id), 0));
+  return {pos, kids, map, width: x, depth: maxD};
+}
+function rTree(d){
+  let nodes = Array.isArray(d.nodes) ? d.nodes : []; let marks = normMarks(d.marks); let extra = "";
+  if (d.kind === "heap"){
+    const vals = Array.isArray(d.values) ? d.values : [];
+    nodes = vals.map((v, i) => ({id: String(i), value: v, left: 2*i+1 < vals.length ? String(2*i+1) : null, right: 2*i+2 < vals.length ? String(2*i+2) : null}));
+    extra = rArray({values: vals, marks, pointers: d.pointers});
+  }
+  if (!nodes.length) return `<div class="empty">empty tree</div>`;
+  const L = treeLayout(nodes, d.root); const by = ptrIndex(d.pointers);
+  const gx = 50, gy = 62, r = 17, pad = 30;
+  const W = Math.max(1, L.width) * gx + pad * 2, H = (L.depth + 1) * gy + 16;
+  const P = id => ({x: pad + L.pos[id].x * gx + gx / 2 - 0, y: 28 + L.pos[id].d * gy});
+  let edges = "", circles = "";
+  for (const id in L.pos){ const p = P(id); for (const c of L.kids(L.map[id])){ if (c && L.pos[c]){ const q = P(c); edges += `<line class="e-l" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}"/>`; } } }
+  for (const id in L.pos){ const n = L.map[id], p = P(id); circles += svgNode(p.x, p.y, n.value ?? n.val ?? n.label ?? id, marks[id], by[id], r); }
+  return `<div class="scrollx"><svg class="viz" width="${W + 40}" height="${H}" viewBox="0 0 ${W + 40} ${H}">${edges}${circles}</svg></div>${extra}`;
+}
+const layoutCache = new Map();
+function graphLayout(nodes, edges, W, H){
+  const key = nodes.map(n => n.id).join("|") + "#" + edges.map(e => e.from + ">" + e.to).join("|");
+  if (layoutCache.has(key)) return layoutCache.get(key);
+  const n = nodes.length, idx = {}; nodes.forEach((nd, i) => idx[String(nd.id)] = i);
+  const given = nodes.every(nd => typeof nd.x === "number" && typeof nd.y === "number");
+  let P;
+  if (given){ P = nodes.map(nd => ({x: 40 + nd.x / 100 * (W - 80), y: 30 + nd.y / 100 * (H - 60)})); }
+  else {
+    const R = Math.min(W, H) / 2 - 40;
+    P = nodes.map((_, i) => ({x: W/2 + R * Math.cos(2*Math.PI*i/n - Math.PI/2), y: H/2 + R * Math.sin(2*Math.PI*i/n - Math.PI/2)}));
+    const E = edges.map(e => [idx[String(e.from)], idx[String(e.to)]]).filter(([a, b]) => a != null && b != null && a !== b);
+    const k = Math.sqrt(W * H / Math.max(1, n)) * 0.75; let temp = W / 8;
+    for (let it = 0; it < 260; it++){
+      const D = P.map(() => ({x: 0, y: 0}));
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++){
+        let dx = P[i].x - P[j].x, dy = P[i].y - P[j].y, dd = Math.hypot(dx, dy) || 0.01; const f = k * k / dd;
+        dx /= dd; dy /= dd; D[i].x += dx * f; D[i].y += dy * f; D[j].x -= dx * f; D[j].y -= dy * f; }
+      for (const [a, b] of E){ let dx = P[a].x - P[b].x, dy = P[a].y - P[b].y, dd = Math.hypot(dx, dy) || 0.01; const f = dd * dd / k;
+        dx /= dd; dy /= dd; D[a].x -= dx * f; D[a].y -= dy * f; D[b].x += dx * f; D[b].y += dy * f; }
+      for (let i = 0; i < n; i++){ D[i].x += (W/2 - P[i].x) * 0.02 * k / 10; D[i].y += (H/2 - P[i].y) * 0.02 * k / 10;
+        const dl = Math.hypot(D[i].x, D[i].y) || 1; P[i].x += D[i].x / dl * Math.min(dl, temp); P[i].y += D[i].y / dl * Math.min(dl, temp);
+        P[i].x = Math.max(34, Math.min(W - 34, P[i].x)); P[i].y = Math.max(28, Math.min(H - 28, P[i].y)); }
+      temp *= 0.975;
+    }
+  }
+  const out = {}; nodes.forEach((nd, i) => out[String(nd.id)] = P[i]); layoutCache.set(key, out); return out;
+}
+function rGraph(d){
+  const nodes = Array.isArray(d.nodes) ? d.nodes.map(n => typeof n === "object" ? n : {id: n}) : [];
+  const edges = (Array.isArray(d.edges) ? d.edges : []).map(e => Array.isArray(e) ? {from: e[0], to: e[1], weight: e[2]} : e).filter(e => e && e.from != null && e.to != null);
+  if (!nodes.length) return `<div class="empty">empty graph</div>`;
+  const flat = nodes.every(n => typeof n.y === "number" && n.y === nodes[0].y);
+  const W = flat ? Math.max(560, nodes.length * 70) : 560, H = flat ? 90 : Math.max(240, Math.min(380, 150 + nodes.length * 18)), r = 18;
+  const pos = graphLayout(nodes, edges, W, H); const marks = normMarks(d.marks), by = ptrIndex(d.pointers);
+  const dir = !!d.directed; const em = normMarks(d.edgeMarks);
+  let es = "";
+  for (const e of edges){
+    const a = pos[String(e.from)], b = pos[String(e.to)]; if (!a || !b) continue;
+    const m = mk(e.mark || em[e.from + "-" + e.to] || em[e.from + "," + e.to] || (!dir && (em[e.to + "-" + e.from] || em[e.to + "," + e.from])));
+    const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
+    const x1 = a.x + dx / L * r, y1 = a.y + dy / L * r, x2 = b.x - dx / L * (r + (dir ? 5 : 0)), y2 = b.y - dy / L * (r + (dir ? 5 : 0));
+    es += `<line class="e-l${m ? " e-" + m : ""}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"${dir ? ' marker-end="url(#ah)"' : ""}/>`;
+    if (e.weight != null && e.weight !== "") es += `<text class="e-w" x="${(a.x + b.x) / 2 + 5}" y="${(a.y + b.y) / 2 - 5}">${esc(fmt(e.weight))}</text>`;
+  }
+  const ns = nodes.map(n => { const p = pos[String(n.id)]; return svgNode(p.x, p.y, n.label ?? n.value ?? n.id, marks[String(n.id)], by[String(n.id)], r); }).join("");
+  return `<div class="scrollx"><svg class="viz" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"${flat ? "" : ' style="max-width:100%;height:auto"'}><defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--ink-3)"/></marker></defs>${es}${ns}</svg></div>`;
+}
+function renderStructure(d){
+  const kind = String(d.kind || "").toLowerCase();
+  let body, label = kind;
+  switch (kind){
+    case "array": case "string": case "text": case "list": body = rArray(d); break;
+    case "matrix": case "grid": case "table": case "dp": body = rMatrix(d); break;
+    case "linkedlist": case "linked_list": body = rList(d); break;
+    case "tree": case "bst": case "trie": case "heap": body = rTree(d); break;
+    case "graph": body = rGraph(d); break;
+    case "stack": case "callstack": case "call_stack": body = rStack(d, false); break;
+    case "queue": case "deque": body = rStack(d, true); break;
+    case "map": case "hashmap": case "dict": case "set": case "hashset": case "object": body = rMap(d); break;
+    default: body = `<pre class="mono" style="margin:0;white-space:pre-wrap">${esc(JSON.stringify(d.values ?? d.value ?? d, null, 1))}</pre>`;
+  }
+  const note = d.note ? `<div class="hint" style="margin-top:6px">${inline(d.note)}</div>` : "";
+  return `<div class="ds"><div class="dsh"><b>${esc(d.name || kind || "value")}</b><span>${esc(label.replace(/_/g, " "))}</span></div>${body}${note}</div>`;
+}
+
+/* ---------- step rendering ---------- */
+function renderStep(){
+  const a = S.analysis; if (!a) return;
+  const n = a.steps.length; S.step = Math.max(0, Math.min(n - 1, S.step));
+  const st = a.steps[S.step], prev = a.steps[S.step - 1];
+  $("stepCount").textContent = `Step ${S.step + 1} of ${n}`;
+  $("stepLine").textContent = st.line ? `line ${st.line}` : "line –";
+  $("stepTitle").textContent = st.title || "Step " + (S.step + 1);
+  $("stepExplain").innerHTML = inline(st.explain);
+  const ov = $("stage").querySelector(".overlay");
+  $("stage").innerHTML = st.structures.length ? st.structures.map(renderStructure).join("") : `<div class="empty">No data structures at this step. See the variables below.</div>`;
+  if (ov) $("stage").appendChild(ov);
+  const pv = prev ? prev.vars : {};
+  $("vars").innerHTML = Object.keys(st.vars).length ? Object.entries(st.vars).map(([k, v]) => {
+    const changed = prev && JSON.stringify(pv[k]) !== JSON.stringify(v);
+    return `<span class="var${changed ? " changed" : ""}"><i>${esc(k)} =</i> ${esc(fmt(v))}</span>`;
+  }).join("") : `<span class="hint">No variables tracked at this step.</span>`;
+  $("scrub").max = n - 1; $("scrub").value = S.step;
+  if (S.mode === "trace") markLine();
+}
+function renderAll(){
+  const a = S.analysis; if (!a) return;
+  const c = a.complexity;
+  $("overview").innerHTML = `
+    <div>
+      <div class="ov-title"><h2>${esc(a.title)}</h2>${a.category ? `<span class="pill acc">${esc(a.category)}</span>` : ""}${a.language ? `<span class="pill">${esc(a.language)}</span>` : ""}${a.example ? `<span class="pill">Example</span>` : ""}${a.library ? `<span class="pill lvl ${esc(a.level)}">${esc(a.level)}</span><span class="pill free" title="This trace was computed ahead of time by running the Java solution">Pre-computed · no Claude usage</span>` : ""}</div>
+      <p class="ov-summary">${inline(a.summary)}</p>
+      <div class="ov-io">${a.input ? `<div><b>Traced input:</b> <code>${esc(a.input)}</code></div>` : ""}${a.output ? `<div><b>Result:</b> <code>${esc(a.output)}</code></div>` : ""}${a.capped ? `<div class="hint">This run is long, so a stretch of repetitive steps in the middle is skipped.</div>` : ""}</div>
+    </div>
+    <div>
+      <div class="cx"><div><span>Best</span><b>${esc(c.best)}</b></div><div><span>Average</span><b>${esc(c.average)}</b></div><div><span>Worst</span><b>${esc(c.worst)}</b></div><div><span>Space</span><b>${esc(c.space)}</b></div></div>
+      ${c.note ? `<p class="cx-note">${inline(c.note)}</p>` : ""}
+    </div>`;
+  const order = {bug: 0, risky: 1, ok: 2};
+  const ecs = a.edgeCases.slice().sort((x, y) => (order[st(x)] ?? 3) - (order[st(y)] ?? 3));
+  $("ecs").innerHTML = ecs.length ? ecs.map((e, i) => {
+    const s = st(e); const lbl = {ok: "Handled", risky: "Risky", bug: "Breaks"}[s];
+    return `<div class="ec"><div class="ec-h"><span class="st ${s}">${lbl}</span><b>${esc(e.name || "Edge case")}</b></div>
+      <div class="ec-io">${e.input ? `<div>Input: <code>${esc(fmt(e.input))}</code></div>` : ""}${e.expected != null ? `<div>Expected: <code>${esc(fmt(e.expected))}</code> &nbsp;Actual: <code>${esc(fmt(e.actual ?? "?"))}</code></div>` : ""}</div>
+      ${e.why ? `<p class="ec-why">${inline(e.why)}</p>` : ""}
+      ${e.input ? `<button class="btn" type="button" data-ec="${i}">Trace this</button>` : ""}</div>`;
+  }).join("") : `<p class="hint">No edge cases reported.</p>`;
+  $("ecs").querySelectorAll("[data-ec]").forEach(b => b.onclick = () => {
+    const e = ecs[+b.dataset.ec];
+    if (S.base && !(Array.isArray(e.steps) && e.steps.length)){ showErr("This input finishes before the code reaches any traced step.", true); return; }
+    if (S.base){
+      stopPlay();
+      S.edge = e; S.analysis = libView(); S.step = 0; renderAll();
+      $("stage").closest(".panel").scrollIntoView({behavior: "smooth", block: "start"});
+      return;
+    }
+    $("inputBox").value = fmt(e.input);
+    if (S.analysis && S.analysis.example && $("editor").value.trim() !== S.analysis.code.trim()) $("editor").value = S.analysis.code;
+    analyze();
+  });
+  $("ideas").innerHTML = a.intuition.map(t => `<li>${inline(t)}</li>`).join("") || `<li>–</li>`;
+  $("pitfalls").innerHTML = a.pitfalls.map(t => `<li>${inline(t)}</li>`).join("") || `<li>–</li>`;
+  const qs = ["What is the loop invariant here?", "How would I make this faster?", "Explain this step in simpler words", "Write a test that breaks this code"];
+  $("askChips").innerHTML = qs.map(q => `<button type="button" class="chip">${esc(q)}</button>`).join("");
+  $("askChips").querySelectorAll(".chip").forEach(c => c.onclick = () => { $("askBox").value = c.textContent; ask(); });
+  const onEdge = !!(S.base && S.edge);
+  $("edgeBar").hidden = !onEdge;
+  if (onEdge) $("edgeName").textContent = S.edge.name || "";
+  renderLibBar();
+  setMode("trace");
+  renderStep();
+}
+function st(e){ const s = String(e.status || "").toLowerCase(); return s.startsWith("ok") || s === "handled" || s === "pass" ? "ok" : (s === "bug" || s === "fail" || s === "breaks" || s === "crash") ? "bug" : "risky"; }
+
+/* ---------- playback ---------- */
+function go(i){ stopPlay(); S.step = i; renderStep(); }
+function stopPlay(){ S.playing = false; clearTimeout(S.timer); $("playIcon").innerHTML = '<path d="M4 2v12l10-6z"/>'; $("bPlay").setAttribute("aria-label", "Play"); }
+function tick(){ if (!S.playing || !S.analysis) return;
+  if (S.step >= S.analysis.steps.length - 1){ stopPlay(); return; }
+  S.step++; renderStep(); S.timer = setTimeout(tick, +$("speed").value); }
+function togglePlay(){
+  if (!S.analysis) return;
+  if (S.playing){ stopPlay(); return; }
+  if (S.step >= S.analysis.steps.length - 1) S.step = 0, renderStep();
+  S.playing = true; $("playIcon").innerHTML = '<path d="M3 2h4v12H3zM9 2h4v12H9z"/>'; $("bPlay").setAttribute("aria-label", "Pause");
+  S.timer = setTimeout(tick, +$("speed").value);
+}
+$("bFirst").onclick = () => go(0);
+$("bPrev").onclick = () => go(S.step - 1);
+$("bNext").onclick = () => go(S.step + 1);
+$("bLast").onclick = () => go((S.analysis?.steps.length || 1) - 1);
+$("bPlay").onclick = togglePlay;
+$("scrub").oninput = e => go(+e.target.value);
+document.addEventListener("keydown", e => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "range") return;
+  if (e.key === "ArrowRight"){ e.preventDefault(); go(S.step + 1); }
+  else if (e.key === "ArrowLeft"){ e.preventDefault(); go(S.step - 1); }
+  else if (e.key === " " && e.target.tagName !== "BUTTON"){ e.preventDefault(); togglePlay(); }
+});
+
+/* ---------- Claude ---------- */
+function numbered(code){ return code.split("\n").map((l, i) => String(i + 1).padStart(4) + " | " + l).join("\n"); }
+function buildPrompt(code, lang, input){
+  return `You are an expert algorithms tutor and a precise execution tracer. A learner pasted the program below. It can be in any programming language (Python, JavaScript, Java, C, C++, Go, Rust, pseudocode, etc.) and any kind of algorithm or data structure.
+
+Do three things:
+1. Identify what it implements and explain it simply.
+2. Trace its execution step by step on one small concrete input, recording the full state of every relevant data structure at each step, so a UI can animate it.
+3. List the edge cases and say how THIS exact code behaves on each.
+
+TRACING RULES
+- Trace what this code actually does, including bugs. Never silently fix it. If it crashes, throws, or loops forever on the input, trace up to that point and say so in the last step (mark offending cells "error").
+- Input to trace: ${input ? input : "none given. If the code already contains a driver/main/example call, use that input. Otherwise choose a small, representative input (about 5-8 elements, small numbers) that exercises the interesting branches."}
+- If the code is only a function or class, imagine a minimal driver that calls it with that input. If it has several functions, trace into the ones that matter and show recursion in a "stack" structure named "call stack".
+- "line" is the 1-based line number shown in the left margin of the code below. Point at the line being executed in that step.
+- Produce 8 to 40 steps. One step = one meaningful action (comparison, swap, push/pop, pointer move, recursive call/return, DP cell fill). In long loops, trace early iterations in detail, then you may compress repetitive iterations into one step and say so in "explain".
+- Each step contains the COMPLETE current state of each structure, not a diff. Keep structure names stable across steps and use the variable names from the code.
+- Use concrete values in explanations ("arr[3]=12 < 23, so search the right half"). Each explain is 1-2 short sentences. Inline code goes in backticks.
+- Keep the whole JSON under about 30,000 characters: fewer steps if structures are big.
+
+STRUCTURE KINDS (choose the kind that best shows each variable)
+- {"kind":"array","name":"arr","values":[5,1,4],"pointers":{"i":0,"j":2},"marks":{"0":"compare","2":"compare"},"view":"cells"}   use "view":"bars" for sorting numbers. Strings: an array of characters. Pointers map a variable name to an index (may be -1 or length when out of range).
+- {"kind":"matrix","name":"dp","rows":[[0,1],[1,2]],"rowLabels":["",...],"colLabels":[...],"marks":{"1,1":"active"}}   for 2D DP tables and grids. Marks keyed "row,col".
+- {"kind":"linkedlist","name":"list","nodes":[{"id":"n1","value":1,"next":"n2"},{"id":"n2","value":2,"next":null}],"pointers":{"head":"n1","curr":"n2","prev":null},"marks":{"n2":"active"}}
+- {"kind":"tree","name":"root","root":"n8","nodes":[{"id":"n8","value":8,"left":"n3","right":null}],"pointers":{"node":"n8"},"marks":{"n8":"visit"}}   binary trees use left/right; n-ary trees and tries use "children":["id",...].
+- {"kind":"heap","name":"heap","values":[1,3,2],"marks":{"0":"swap"}}   array-backed heap; shown as tree and array.
+- {"kind":"graph","name":"graph","directed":false,"nodes":[{"id":"A","label":"A"}],"edges":[{"from":"A","to":"B","weight":4,"mark":"active"}],"marks":{"A":"done"},"pointers":{"node":"A"}}   omit "weight" if unweighted.
+- {"kind":"stack","name":"stack","values":["bottom","top"]}   last value is the top. Also use for the call stack, e.g. ["main()","fib(4)","fib(3)"].
+- {"kind":"queue","name":"queue","values":["front","back"]}
+- {"kind":"map","name":"seen","entries":[["a",1],["b",2]],"marks":{"a":"active"}}   hash maps and dicts. Sets: entries of one-element arrays [["x"],["y"]].
+Allowed marks: "active" (being looked at now), "compare", "swap" (just changed or moved), "visit" (visited/queued), "done" (finalized/sorted/processed), "found" (result/answer/final path), "dim" (ruled out), "error".
+Scalar variables (indices, sums, flags, return values) go in the step's "vars" object, not in structures.
+
+OUTPUT: reply with ONLY one JSON object of exactly this shape, no markdown fences, no commentary:
+{
+ "title": "short algorithm name, e.g. Binary Search",
+ "category": "e.g. Sorting · Divide and conquer",
+ "language": "detected language name",
+ "summary": "2-3 plain sentences on what it does and the core idea",
+ "input": "the concrete input you traced",
+ "output": "what the code returns/prints for that input (or the error)",
+ "complexity": {"best":"O(..)","average":"O(..)","worst":"O(..)","space":"O(..)","note":"one sentence on when best/worst happen"},
+ "intuition": ["3-5 short bullets explaining why the algorithm works (invariants, key insight)"],
+ "pitfalls": ["3-5 common mistakes when writing this algorithm"],
+ "steps": [{"line": 4, "title": "3-6 word step title", "explain": "...", "vars": {"lo":0,"hi":7}, "structures": [ ... ]}],
+ "edgeCases": [{"name":"Empty input","input":"arr = [], target = 3","expected":"-1","actual":"what THIS code returns or does","status":"ok | risky | bug","why":"one or two sentences"}]
+}
+Give 5-8 edge cases covering: empty input, single element, duplicates, negative/zero values, already-sorted/reverse-sorted or worst-case shape, very large values or overflow, invalid input/null, and anything specific to this algorithm. "status": "ok" if this code handles it correctly, "bug" if it gives a wrong answer or crashes, "risky" if it works but has a caveat. Each edge-case "input" must be concrete enough to trace.
+
+Language selected by the user: ${lang === "auto" ? "auto-detect" : lang}
+
+CODE (line numbers on the left are not part of the code):
+${numbered(code)}`;
+}
+const ERR = {
+  not_granted: "Claude access was declined for this page, so it can't analyze code. Reload the page to be asked again.",
+  sampling_disabled: "Claude isn't available on this account.",
+  not_declared: "This page can't reach Claude right now.",
+  capability_disabled: "Claude can't be used in this view.",
+  rate_limited: "Too many requests right now, or your usage limit was reached. Wait a bit, then try again.",
+  session_expired: "Your Claude session expired. Sign in again, then retry.",
+  refused: "Claude declined to analyze this. Try different code.",
+  invalid_json: "The trace came back incomplete, usually because it was too long. Try a smaller input, or the Quick trace.",
+  prompt_too_large: "That code is too long. Paste just the core function or class.",
+  empty_completion: "Claude returned nothing. Try again with a smaller input.",
+  empty_trace: "The analysis had no steps to show. Try again, or give an explicit input.",
+  cancelled: "Stopped.",
+  no_key: "Add a free OpenRouter key in AI settings to trace your own code.",
+  no_model: "Pick a free model in AI settings.",
+  bad_key: "OpenRouter rejected the key. Check it in AI settings.",
+  no_credit: "OpenRouter says the account balance is negative. Free models need a balance of at least zero.",
+  or_rate_limited: "The free OpenRouter limit was reached (about 20 a minute, 50 a day). Wait a bit, or try another free model.",
+  network: "Couldn't reach OpenRouter. Check your connection.",
+  upstream_error: "The AI service had a problem. Try again, or pick another free model."
+};
+const errText = e => (ERR[e && e.code] || "Couldn't reach the AI service. Check your connection and try again.") + (e && e.message && /^(bad_key|upstream_error|or_rate_limited)$/.test(e.code) ? " (" + e.message + ")" : "");
+
+function showErr(text, info){ const el = $("err"); el.hidden = !text; el.textContent = text || ""; el.className = "msg" + (info ? " info" : ""); }
+function overlay(on, text){
+  let ov = $("stage").querySelector(".overlay");
+  if (!on){ ov && ov.remove(); return; }
+  if (!ov){ ov = document.createElement("div"); ov.className = "overlay"; ov.innerHTML = '<div class="spinner"></div><p></p><p class="hint"></p>'; $("stage").appendChild(ov); }
+  ov.querySelector("p").textContent = text;
+}
+function overlaySub(t){ const ov = $("stage").querySelector(".overlay .hint"); if (ov) ov.textContent = t; }
+
+async function analyze(){
+  const code = $("editor").value.replace(/\s+$/, "");
+  if (!code.trim()){ showErr("Paste some code first."); setMode("edit"); $("editor").focus(); return; }
+  if (!(await AI.ready())){ showErr(IN_CLAUDE ? "Claude isn't available here right now." : "Add a free OpenRouter key in AI settings to trace your own code. The 159 sheet problems work without one.", true); if (!IN_CLAUDE) openAI(); return; }
+  showErr(""); stopPlay();
+  S.ctl = new AbortController();
+  $("runBtn").disabled = true; $("stopBtn").hidden = false;
+  overlay(true, AI.provider() === "claude" ? "Reading your code and running it in Claude's head…" : "Reading your code and tracing it…");
+  overlaySub("Deep traces can take a minute.");
+  const t0 = Date.now();
+  try {
+    const raw = await AI.json(buildPrompt(code, $("lang").value, $("inputBox").value.trim()), {
+      modelTier: $("tier").value, signal: S.ctl.signal,
+      onText: ({text}) => { const steps = (text.match(/"line"\s*:/g) || []).length;
+        overlay(true, steps ? `Tracing… ${steps} step${steps === 1 ? "" : "s"} recorded` : "Writing the analysis…");
+        overlaySub(`${Math.round((Date.now() - t0) / 1000)} s`); }
+    });
+    S.analysis = normalize(raw, code, $("lang").value);
+    S.base = null; S.edge = null; LIB.cur = null; S.step = 0; layoutCache.clear(); overlay(false); renderAll(); save();
+  } catch (e) {
+    overlay(false);
+    if (!(e && e.code === "cancelled")) showErr(errText(e));
+    if (e && e.code === "not_granted") $("statusText").textContent = "Claude access declined";
+  } finally {
+    $("runBtn").disabled = false; $("stopBtn").hidden = true; S.ctl = null;
+  }
+}
+$("runBtn").onclick = analyze;
+$("stopBtn").onclick = () => S.ctl && S.ctl.abort();
+
+async function ask(){
+  const q = $("askBox").value.trim(); if (!q) return;
+  const out = $("answer");
+  if (!(await AI.ready())){ out.innerHTML = `<p class="hint">${IN_CLAUDE ? "Claude isn't available here right now." : "Add a free OpenRouter key in AI settings to ask questions."}</p>`; return; }
+  const a = S.analysis; const stp = a ? a.steps[S.step] : null;
+  const prompt = `You are a friendly algorithms tutor. Answer the learner's question about their code clearly and concisely (under 200 words unless code is needed). Use short paragraphs or bullets, backticks for inline code, and fenced blocks for code.
+
+${a ? `Algorithm: ${a.title}. Traced input: ${a.input}.
+The learner is looking at step ${S.step + 1} of ${a.steps.length}: line ${stp.line}, "${stp.title}" — ${stp.explain}
+Variables at this step: ${JSON.stringify(stp.vars)}
+` : ""}
+CODE:
+${numbered(a ? a.code : $("editor").value)}
+
+QUESTION: ${q}`;
+  S.askCtl = new AbortController(); $("askBtn").disabled = true; $("askStop").hidden = false;
+  out.innerHTML = `<p class="hint">Thinking…</p>`;
+  try {
+    await AI.text(prompt, { signal: S.askCtl.signal, onText: ({text}) => { out.innerHTML = md(text); } });
+  } catch (e) {
+    if (e && e.text) out.innerHTML = md(e.text);
+    if (!(e && e.code === "cancelled")) out.insertAdjacentHTML("beforeend", `<p class="msg">${esc(errText(e))}</p>`);
+  } finally { $("askBtn").disabled = false; $("askStop").hidden = true; S.askCtl = null; }
+}
+$("askBtn").onclick = ask;
+$("askStop").onclick = () => S.askCtl && S.askCtl.abort();
+$("askBox").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) ask(); });
+
+/* ---------- editor wiring ---------- */
+const ed = $("editor");
+ed.addEventListener("input", () => { syncGutter(); checkStale(); save(); });
+ed.addEventListener("scroll", () => { $("gutter").scrollTop = ed.scrollTop; });
+ed.addEventListener("keydown", e => {
+  if (e.key === "Tab" && !e.shiftKey){ e.preventDefault(); const s = ed.selectionStart, en = ed.selectionEnd;
+    ed.value = ed.value.slice(0, s) + "    " + ed.value.slice(en); ed.selectionStart = ed.selectionEnd = s + 4; syncGutter(); }
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); analyze(); }
+});
+$("modeBtn").onclick = () => setMode(S.mode === "edit" ? "trace" : "edit");
+$("inputBox").addEventListener("input", save);
+$("inputBox").addEventListener("keydown", e => { if (e.key === "Enter") analyze(); });
+$("lang").onchange = () => {
+  const v = $("lang").value;
+  if (S.base){
+    if (!LIB_LANGS.includes(v)){
+      showErr("Solutions from the problem sheet are available in Java, Python and C++. Other languages work when you paste your own code.", true);
+      $("lang").value = S.lang; return;
+    }
+    showErr(""); S.lang = v;
+    const keep = S.step; S.analysis = libView(); S.step = Math.min(keep, S.analysis.steps.length - 1);
+    ed.value = S.analysis.code; renderAll();
+  }
+  save();
+};
+$("tier").onchange = save;
+const exSel = $("examples");
+Object.keys(EXAMPLES).forEach(k => { const o = document.createElement("option"); o.value = k; o.textContent = k; exSel.appendChild(o); });
+exSel.onchange = () => {
+  const ex = EXAMPLES[exSel.value]; exSel.value = ""; if (!ex) return;
+  ed.value = ex.code; $("lang").value = ex.lang; $("inputBox").value = "";
+  S.base = null; S.edge = null; LIB.cur = null;
+  if (ex.code === DEMO_CODE){ S.analysis = {...DEMO, code: DEMO_CODE}; S.step = 0; renderAll(); }
+  else { showErr("Example loaded. Press Visualize to trace it.", true); setMode("edit"); }
+  save();
+};
+
+/* ---------- problem library (pre-computed traces, no Claude usage) ---------- */
+function libItems(){ return (LIB.index || []).filter(x => x.file); }
+async function loadIndex(){
+  try { const r = await fetch("data/index.json"); if (!r.ok) return false; LIB.index = await r.json(); }
+  catch { return false; }
+  if (!Array.isArray(LIB.index) || !libItems().length) return false;
+  $("libbar").hidden = false;
+  $("libCount").textContent = libItems().length === LIB.index.length ? `· ${LIB.index.length}` : `· ${libItems().length} of ${LIB.index.length}`;
+  return true;
+}
+async function openProblem(id){
+  const e = (LIB.index || []).find(x => x.id === id && x.file); if (!e) return false;
+  try {
+    if (!LIB.files[e.file]){ const r = await fetch("data/" + e.file); if (!r.ok) throw 0; LIB.files[e.file] = await r.json(); }
+  } catch { showErr("Couldn't load that problem's trace. Check your connection and try again."); return false; }
+  const p = LIB.files[e.file].find(x => x.id === id); if (!p) return false;
+  stopPlay(); showErr("");
+  LIB.cur = p;
+  S.base = {...p, library: true, intuition: p.intuition || [], pitfalls: p.pitfalls || [], edgeCases: p.edgeCases || []};
+  S.edge = null; S.analysis = libView(); S.step = 0; layoutCache.clear();
+  ed.value = S.analysis.code; $("lang").value = S.lang; $("inputBox").value = "";
+  renderAll(); save();
+  return true;
+}
+function renderLibBar(){
+  const p = S.base && LIB.cur;
+  if (!LIB.index) return;
+  $("curProb").innerHTML = p
+    ? `<span class="lvl ${esc(p.level)}">${esc(p.level)}</span><b>${esc(p.title)}</b><span class="hint">${esc(p.topic)}</span><a href="${esc(p.url)}" target="_blank" rel="noopener">Open problem ↗</a>`
+    : `<span class="hint">Your own code. Pick a problem from the sheet to see its free trace.</span>`;
+  const items = libItems(), i = p ? items.findIndex(x => x.id === p.id) : -1;
+  $("probPrev").disabled = i <= 0; $("probNext").disabled = i < 0 || i >= items.length - 1;
+}
+function renderLibList(){
+  const q = $("libSearch").value.trim().toLowerCase(), lv = LIB.level; const cur = LIB.cur && S.base ? LIB.cur.id : null;
+  const groups = []; let g = null;
+  for (const x of LIB.index || []){
+    if (lv !== "all" && x.level !== lv) continue;
+    if (q && !(x.title.toLowerCase().includes(q) || x.topic.toLowerCase().includes(q))) continue;
+    if (!g || g.topic !== x.topic){ g = {topic: x.topic, items: []}; groups.push(g); }
+    g.items.push(x);
+  }
+  $("libList").innerHTML = groups.length ? groups.map(g => `<div class="lt">${esc(g.topic)}<span>${g.items.filter(x => x.file).length}/${g.items.length}</span></div>` + g.items.map(x =>
+    `<button type="button" class="li" data-id="${esc(x.id)}"${x.id === cur ? ' aria-current="true"' : ""}${x.file ? "" : " disabled"}><span class="t">${esc(x.title)}</span>${x.file ? "" : '<span class="hint">not built yet</span>'}<span class="lvl ${esc(x.level)}">${esc(x.level)}</span></button>`).join("")).join("")
+    : `<p class="hint" style="padding:14px">No problems match.</p>`;
+  $("libList").querySelectorAll(".li[data-id]:not([disabled])").forEach(b => b.onclick = async () => { closeLib(); await openProblem(b.dataset.id); });
+}
+function openLib(){ $("drawer").hidden = false; renderLibList(); $("libSearch").focus(); const c = $("libList").querySelector('[aria-current="true"]'); if (c) c.scrollIntoView({block: "center"}); }
+function closeLib(){ $("drawer").hidden = true; $("libOpen").focus(); }
+$("libOpen").onclick = openLib;
+$("libClose").onclick = closeLib;
+$("drawer").addEventListener("click", e => { if (e.target.id === "drawer") closeLib(); });
+$("drawer").addEventListener("keydown", e => { if (e.key === "Escape") closeLib(); e.stopPropagation(); });
+$("libSearch").addEventListener("input", renderLibList);
+$("levels").querySelectorAll(".chip").forEach(c => c.onclick = () => {
+  LIB.level = c.dataset.l; $("levels").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", String(x === c))); renderLibList();
+});
+function stepProblem(d){ const items = libItems(), i = items.findIndex(x => LIB.cur && x.id === LIB.cur.id); const n = items[i + d]; if (n) openProblem(n.id); }
+$("probPrev").onclick = () => stepProblem(-1);
+$("probNext").onclick = () => stepProblem(1);
+window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if (id && LIB.index) openProblem(id); });
+$("edgeBack").onclick = () => { if (S.base){ stopPlay(); S.edge = null; S.analysis = libView(); S.step = 0; renderAll(); } };
+
+/* ---------- boot ---------- */
+const DEMO_CODE = EXAMPLES["Binary search · Python"].code;
+(async () => {
+  const saved = store.get();
+  if (saved && LIB_LANGS.includes(saved.libLang)) S.lang = saved.libLang;
+  if (saved){ if (saved.lang) $("lang").value = saved.lang; if (saved.input) $("inputBox").value = saved.input; if (saved.tier) $("tier").value = saved.tier; }
+  const customSaved = saved && saved.analysis && saved.analysis.steps && saved.analysis.steps.length;
+  const haveLib = await loadIndex();
+  if (haveLib && !customSaved){
+    const first = libItems()[0].id;
+    const hashId = location.hash.slice(1);
+    if (hashId && await openProblem(hashId)) return;
+    if (await openProblem((saved && saved.libId) || first)) return;
+    if (await openProblem(first)) return;
+  }
+  if (customSaved){ ed.value = saved.code || saved.analysis.code; S.analysis = saved.analysis; }
+  else { ed.value = (saved && saved.code) || DEMO_CODE; S.analysis = {...DEMO, code: DEMO_CODE}; }
+  renderAll();
+})();
+})();
+</script>
+
+</body>
+</html>
