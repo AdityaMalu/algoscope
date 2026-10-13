@@ -3,7 +3,7 @@ import java.util.*;
 /** Trees: BST & Advanced */
 class TreesB {
     static TreeNode R0;
-    static final Set<TreeNode> DONE = Collections.newSetFromMap(new IdentityHashMap<>());
+    static final Set<TreeNode> DONE = Collections.newSetFromMap(new LinkedHashMap<>());
     static void reset(TreeNode r) { R0 = r; DONE.clear(); }
     static S tv(TreeNode cur, String mark) {
         S s = T.tree("tree", R0);

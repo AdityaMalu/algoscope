@@ -174,6 +174,20 @@ def fix_steps(steps, reg, file, warn, title):
     return out
 
 
+def natural(k):
+    return (len(k), k)
+
+
+def stable(o):
+    """Sort "marks"/"edgeMarks" keys. Java fills them from hash-ordered collections, so their order can change between runs."""
+    if isinstance(o, list):
+        return [stable(x) for x in o]
+    if isinstance(o, dict):
+        return {k: ({m: v[m] for m in sorted(v, key=natural)} if k in ("marks", "edgeMarks") and isinstance(v, dict) else stable(v))
+                for k, v in o.items()}
+    return o
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     topics = sys.argv[1:]
@@ -221,7 +235,7 @@ def main():
         if os.path.exists(path):
             with open(path, encoding="utf-8") as fh: existing = {x["id"]: x for x in json.load(fh)}
         for x in recs: existing[x["id"]] = x
-        with open(path, "w", encoding="utf-8") as fh: json.dump(list(existing.values()), fh, separators=(",", ":"), ensure_ascii=False)
+        with open(path, "w", encoding="utf-8") as fh: json.dump(stable(list(existing.values())), fh, separators=(",", ":"), ensure_ascii=False)
     # index over everything on disk
     have = {}
     for f in os.listdir(DATA):

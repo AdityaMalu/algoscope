@@ -3,8 +3,8 @@ import java.util.*;
 /** Trees: Traversal */
 class TreesA {
     static TreeNode R0, R1;
-    static final Set<TreeNode> DONE = Collections.newSetFromMap(new IdentityHashMap<>());
-    static final Map<TreeNode, Object> NOTE = new IdentityHashMap<>();
+    static final Set<TreeNode> DONE = Collections.newSetFromMap(new LinkedHashMap<>());
+    static final Map<TreeNode, Object> NOTE = new LinkedHashMap<>();
 
     static void reset(TreeNode r) { R0 = r; DONE.clear(); NOTE.clear(); }
     static String nm(TreeNode n) { return n == null ? "null" : String.valueOf(n.val); }

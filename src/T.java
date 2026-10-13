@@ -72,13 +72,39 @@ final class T {
         if (o instanceof Object[] a) { List<Object> l = new ArrayList<>(); for (Object x : a) l.add(conv(x)); return l; }
         if (o instanceof Map<?, ?> mp) {
             Map<String, Object> r = new LinkedHashMap<>();
-            for (Map.Entry<?, ?> e : mp.entrySet()) r.put(F.key(e.getKey()), conv(e.getValue()));
+            for (Map.Entry<?, ?> e : entries(mp)) r.put(F.key(e.getKey()), conv(e.getValue()));
             return r;
         }
-        if (o instanceof Collection<?> c) { List<Object> l = new ArrayList<>(); for (Object x : c) l.add(conv(x)); return l; }
+        if (o instanceof Collection<?> c) { List<Object> l = new ArrayList<>(); for (Object x : items(c)) l.add(conv(x)); return l; }
         if (o instanceof ListNode n) return "node(" + n.val + ")";
         if (o instanceof TreeNode n) return "node(" + n.val + ")";
         return String.valueOf(o);
+    }
+
+    // Hash containers keyed by objects without their own hashCode (tree/list/graph nodes) iterate in
+    // identity-hash order, which changes from one JVM run to the next. Sort those so traces are reproducible.
+    static boolean identityKeyed(Iterable<?> keys) {
+        for (Object k : keys) {
+            if (k == null) continue;
+            try { if (k.getClass().getMethod("hashCode").getDeclaringClass() == Object.class) return true; }
+            catch (NoSuchMethodException e) { return true; }
+        }
+        return false;
+    }
+    static boolean unordered(Object c) {
+        return (c instanceof HashMap<?, ?> && !(c instanceof LinkedHashMap<?, ?>))
+            || (c instanceof HashSet<?> && !(c instanceof LinkedHashSet<?>));
+    }
+    static final Comparator<String> NATURAL = Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder());
+    static List<Map.Entry<?, ?>> entries(Map<?, ?> m) {
+        List<Map.Entry<?, ?>> l = new ArrayList<>(m.entrySet());
+        if (unordered(m) && identityKeyed(m.keySet())) l.sort((a, b) -> NATURAL.compare(F.key(a.getKey()), F.key(b.getKey())));
+        return l;
+    }
+    static List<Object> items(Collection<?> c) {
+        List<Object> l = new ArrayList<>(c);
+        if (unordered(c) && identityKeyed(c)) l.sort((a, b) -> NATURAL.compare(F.key(a), F.key(b)));
+        return l;
     }
 
     // ---------- structures ----------
@@ -89,7 +115,7 @@ final class T {
     static S list(String name, ListNode... heads) {
         S s = new S("linkedlist", name);
         List<Object> nodes = new ArrayList<>();
-        Set<ListNode> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<ListNode> seen = Collections.newSetFromMap(new LinkedHashMap<>());
         for (ListNode h : heads)
             for (ListNode c = h; c != null && seen.add(c); c = c.next) {
                 Map<String, Object> n = new LinkedHashMap<>();
@@ -103,7 +129,7 @@ final class T {
     static S tree(String name, TreeNode... roots) {
         S s = new S("tree", name);
         List<Object> nodes = new ArrayList<>();
-        Set<TreeNode> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        Set<TreeNode> seen = Collections.newSetFromMap(new LinkedHashMap<>());
         String rootId = null;
         for (TreeNode r : roots) {
             if (r == null) continue;
@@ -142,14 +168,14 @@ final class T {
     static S map(String name, Map<?, ?> m) {
         S s = new S("map", name);
         List<Object> e = new ArrayList<>();
-        for (Map.Entry<?, ?> x : m.entrySet()) e.add(Arrays.asList(conv(x.getKey()), conv(x.getValue())));
+        for (Map.Entry<?, ?> x : entries(m)) e.add(Arrays.asList(conv(x.getKey()), conv(x.getValue())));
         s.put("entries", e);
         return s;
     }
     static S set(String name, Collection<?> c) {
         S s = new S("set", name);
         List<Object> e = new ArrayList<>();
-        for (Object x : c) e.add(Collections.singletonList(conv(x)));
+        for (Object x : items(c)) e.add(Collections.singletonList(conv(x)));
         s.put("entries", e);
         return s;
     }

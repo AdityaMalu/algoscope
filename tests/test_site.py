@@ -103,3 +103,23 @@ def test_no_csp_violations(page, site):
     page.wait_for_timeout(800)
     assert page.evaluate("() => window.__csp") == []
     assert page.evaluate("() => !!window.hljs"), "highlight.js failed to load (SRI or CSP)"
+
+
+def test_ai_trace_is_checked(app):
+    """Steps pointing outside the code lose their line; unknown shapes and junk steps are counted."""
+    r = app.evaluate(r"""() => AlgoScope.normalize({steps: [{line: 99, title: "a"}, {line: 1, structures: [{kind: "weird"}, 7]}, 5]}, "x = 1\ny = 2", "auto")""")
+    assert [s["line"] for s in r["steps"]] == [0, 1]
+    assert r["issues"] == {"lines": 1, "shapes": 2, "dropped": 1}
+    assert r["ai"] is True
+
+
+def test_ai_badge_shown(page, site):
+    analysis = {"title": "Mine", "summary": "", "code": "x = 1", "ai": True, "issues": {"lines": 2, "shapes": 0, "dropped": 0},
+                "complexity": {"best": "-", "average": "-", "worst": "-", "space": "-"}, "intuition": [], "pitfalls": [],
+                "edgeCases": [], "steps": [{"line": 1, "title": "t", "explain": "", "vars": {}, "structures": []}]}
+    page.goto(site + "#home")
+    page.evaluate("v => localStorage.setItem('algoscope:v1', v)", json.dumps({"analysis": analysis, "code": "x = 1"}))
+    page.goto(site + "#code")
+    page.reload()
+    expect(page.locator("#overview .pill.warn")).to_contain_text("AI-generated")
+    expect(page.locator("#overview")).to_contain_text("2 steps pointed at a line")

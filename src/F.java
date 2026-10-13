@@ -45,7 +45,7 @@ final class F {
         if (o instanceof Collection<?> c) { StringJoiner j = new StringJoiner(", ", "[", "]"); for (Object x : c) j.add(s(x)); return j.toString(); }
         if (o instanceof ListNode n) {
             StringJoiner j = new StringJoiner(", ", "[", "]");
-            Set<ListNode> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+            Set<ListNode> seen = Collections.newSetFromMap(new LinkedHashMap<>());
             for (ListNode c = n; c != null; c = c.next) { if (!seen.add(c)) { j.add("…cycle"); break; } j.add(String.valueOf(c.val)); }
             return j.toString();
         }
