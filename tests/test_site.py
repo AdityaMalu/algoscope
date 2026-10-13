@@ -90,3 +90,16 @@ def test_saved_trace_cannot_inject_html(page, site):
     page.wait_for_timeout(300)
     assert page.evaluate("() => window.__pwned") is None
     assert page.locator("img[src=x]").count() == 0
+
+
+def test_no_csp_violations(page, site):
+    """The Content-Security-Policy must not block anything the page itself needs."""
+    page.add_init_script("window.__csp = []; document.addEventListener('securitypolicyviolation', e => window.__csp.push(e.violatedDirective + ' ' + e.blockedURI))")
+    page.goto(site + "#home")
+    page.wait_for_selector("#homeTopics .prow")
+    page.goto(site + "#binary-search")
+    expect(page.locator("#stepCount")).to_have_text(re.compile(r"Step 1 of"))
+    page.click("#bPlay")
+    page.wait_for_timeout(800)
+    assert page.evaluate("() => window.__csp") == []
+    assert page.evaluate("() => !!window.hljs"), "highlight.js failed to load (SRI or CSP)"

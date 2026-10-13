@@ -46,6 +46,7 @@ jobs:
       - name: Committed data/ and index.html must match the build
         run: |
           if ! git diff --exit-code --stat -- data index.html; then
+            python tools/diff_data.py
             echo "::error::data/ or index.html is out of date. Run 'python build.py' and 'python tools/make_site.py', then commit."
             exit 1
           fi

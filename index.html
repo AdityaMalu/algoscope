@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-00gqIARzhUkWqxBwTs2bnhSDDJk1av5ZnvNu8n8VFSM=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++.">
 <style>html,body{margin:0}body{font:14px system-ui,-apple-system,'Segoe UI',sans-serif}</style>
 <title>AlgoScope</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 /* Layout: overview band → code panel (edit/trace) beside a graph-paper stage → report (edge cases, ideas, ask) */
 :root{
@@ -305,6 +306,8 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
 .tbar i{display:block;height:100%;background:var(--m-done);border-radius:99px}
 .prow{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;text-decoration:none;color:var(--ink);font-size:14px}
 .prow:hover{background:var(--sunk)}
+.modal-card label.check{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:13px;font-weight:400;letter-spacing:0;cursor:pointer}
+.modal-card label.check input{width:auto;margin:0}
 .prow .t{flex:1;min-width:0}
 .prow .tick{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid var(--line);display:inline-flex;align-items:center;justify-content:center}
 .prow.seen .tick{background:var(--m-done);border-color:var(--m-done)}
@@ -365,7 +368,8 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
       <div>
         <label for="orKey">OpenRouter API key</label>
         <div class="keyrow"><input id="orKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-v1-…"><button class="btn" id="orShow" type="button">Show</button></div>
-        <p class="hint" style="margin:6px 0 0">Saved only in this browser (localStorage) and sent only to openrouter.ai. It is never uploaded anywhere else.</p>
+        <label class="check"><input type="checkbox" id="orRemember"> Remember the key on this device</label>
+        <p class="hint" style="margin:6px 0 0">Unticked, the key is kept only until you close this tab. Either way it stays in this browser and is sent only to openrouter.ai. Tip: set a credit limit of $0 on the key at openrouter.ai, so it can only use free models.</p>
       </div>
       <div>
         <label for="orModel">Free model</label>
@@ -711,8 +715,14 @@ const local = {
   get(k){ try { return localStorage.getItem(k) || ""; } catch { return ""; } },
   set(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} }
 };
+/* The key lives in sessionStorage (gone when the tab closes) unless the viewer ticks "Remember". */
+const keyStore = {
+  get(){ try { return sessionStorage.getItem(KEYS.key) || localStorage.getItem(KEYS.key) || ""; } catch { return ""; } },
+  remembered(){ try { return !!localStorage.getItem(KEYS.key); } catch { return false; } },
+  set(v, remember){ try { localStorage.removeItem(KEYS.key); sessionStorage.removeItem(KEYS.key); if (v) (remember ? localStorage : sessionStorage).setItem(KEYS.key, v); } catch {} }
+};
 const AI = {
-  provider(){ return IN_CLAUDE ? (sampleFn ? "claude" : null) : (local.get(KEYS.key) ? "openrouter" : null); },
+  provider(){ return IN_CLAUDE ? (sampleFn ? "claude" : null) : (keyStore.get() ? "openrouter" : null); },
   async ready(){ if (IN_CLAUDE) await samplePromise; return AI.provider(); },
   async text(prompt, opts){
     if (AI.provider() === "claude") return (await sampleFn(prompt, opts)).text;
@@ -733,7 +743,7 @@ function parseJSONLoose(text){
   throw {code: "invalid_json", text: t};
 }
 async function orStream(prompt, {signal, onText} = {}){
-  const key = local.get(KEYS.key), model = local.get(KEYS.model);
+  const key = keyStore.get(), model = local.get(KEYS.model);
   if (!key) throw {code: "no_key"};
   if (!model) throw {code: "no_model"};
   let res;
@@ -814,7 +824,7 @@ async function loadFreeModels(){
 }
 function openAI(){
   $("aiModal").hidden = false; $("aiInClaude").hidden = !IN_CLAUDE; $("aiMsg").hidden = true;
-  $("orKey").value = local.get(KEYS.key); $("orKey").disabled = IN_CLAUDE;
+  $("orKey").value = keyStore.get(); $("orKey").disabled = IN_CLAUDE; $("orRemember").checked = keyStore.remembered();
   loadFreeModels(); $("orKey").focus();
 }
 function closeAI(){ $("aiModal").hidden = true; $("aiOpen").focus(); }
@@ -828,11 +838,11 @@ $("aiSave").onclick = () => {
   const m = $("aiMsg"); m.hidden = false;
   if (key && !/^sk-or-/.test(key)){ m.className = "msg"; m.textContent = "That doesn't look like an OpenRouter key. It should start with sk-or-."; return; }
   if (key && !model){ m.className = "msg"; m.textContent = "Pick a free model too."; return; }
-  local.set(KEYS.key, key); local.set(KEYS.model, model);
-  m.className = "msg info"; m.textContent = key ? "Saved in this browser. Paste your code and press Visualize." : "No key saved.";
+  keyStore.set(key, $("orRemember").checked); local.set(KEYS.model, model);
+  m.className = "msg info"; m.textContent = key ? ($("orRemember").checked ? "Saved in this browser." : "Saved for this tab only. It is forgotten when you close it.") + " Paste your code and press Visualize." : "No key saved.";
   renderAIStatus();
 };
-$("aiClear").onclick = () => { local.set(KEYS.key, ""); $("orKey").value = ""; const m = $("aiMsg"); m.hidden = false; m.className = "msg info"; m.textContent = "Key removed from this browser."; renderAIStatus(); };
+$("aiClear").onclick = () => { keyStore.set(""); $("orKey").value = ""; const m = $("aiMsg"); m.hidden = false; m.className = "msg info"; m.textContent = "Key removed from this browser."; renderAIStatus(); };
 renderAIStatus();
 
 const store = {
