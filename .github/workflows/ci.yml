@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Run the Java solutions and rebuild the traces
+        run: python build.py
+
+      - name: Check the traces
+        run: python tools/check_data.py
+
+      - name: Cross-check the Python and C++ solutions against Java
+        run: python tools/verify.py
+
+      - name: Assemble the site
+        run: python tools/make_site.py --out _site
+
+      - name: Committed data/ and index.html must match the build
+        run: |
+          if ! git diff --exit-code --stat -- data index.html; then
+            echo "::error::data/ or index.html is out of date. Run 'python build.py' and 'python tools/make_site.py', then commit."
+            exit 1
+          fi
+
+      - name: Install browser test tools
+        run: |
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: pytest -q
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

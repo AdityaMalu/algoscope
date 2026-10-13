@@ -4,3 +4,5 @@ __pycache__/
 *.class
 .env
 *.local
+_site/
+.pytest_cache/

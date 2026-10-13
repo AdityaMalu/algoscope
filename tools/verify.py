@@ -217,6 +217,7 @@ def main():
     for m, r in report.items(): print("NOTE", m, r)
     print("not checked (no parsable input, Java threw, or answer is not unique):", len(skipped), " ".join(skipped))
     print(f"Python: {totals['py'][0]} passed, {totals['py'][1]} failed | C++: {totals['cpp'][0]} passed, {totals['cpp'][1]} failed")
+    if totals["py"][1] or totals["cpp"][1]: sys.exit(1)
 
 
 if __name__ == "__main__":
