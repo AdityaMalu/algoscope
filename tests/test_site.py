@@ -344,3 +344,56 @@ def test_switching_provider_ignores_stale_model_list(page, site):
     page.wait_for_timeout(1200)
     assert "slow" not in page.input_value("#orModel")
     expect(page.locator("#orModelHint")).to_contain_text("Add a key")
+
+
+def test_long_complexity_wraps(page, site):
+    analysis = dict(FAKE_TRACE, code=JAVA, ai=True, complexity={"best": "O(n)", "average": "O(n log(n)) (but non-terminating for many inputs)",
+                                                              "worst": "O(∞) - loops forever", "space": "O(1)"})
+    page.goto(site + "#home")
+    page.evaluate("v => localStorage.setItem('algoscope:v1', v)", json.dumps({"analysis": analysis, "code": JAVA}))
+    page.goto(site + "#code")
+    page.reload()
+    cells = page.locator("#overview .cx > div")
+    expect(cells.nth(1).locator("b")).to_have_text("O(n log(n))")
+    expect(cells.nth(1).locator("small")).to_have_text("but non-terminating for many inputs")
+    expect(cells.nth(2).locator("small")).to_have_text("loops forever")
+    for i in range(4):  # nothing spills out of its box
+        assert page.evaluate("el => el.scrollWidth <= el.clientWidth + 1", cells.nth(i).element_handle())
+
+
+def test_retired_model_switches_to_suggestion(page, site):
+    calls = []
+
+    def gen(route):
+        calls.append(route.request.url)
+        if "gemini-old" in route.request.url:
+            route.fulfill(status=404, json={"error": {"message": "This model models/gemini-old is no longer available to new users. Please update your code to use models/gemini-new-lite for the latest features."}},
+                          headers={"access-control-allow-origin": "*"})
+        else:
+            events = [{"candidates": [{"content": {"parts": [{"text": c}]}}]} for c in chunks(json.dumps(FAKE_TRACE))]
+            route.fulfill(status=200, headers={"content-type": "text/event-stream", "access-control-allow-origin": "*"}, body=sse(events))
+
+    page.route("https://generativelanguage.googleapis.com/v1beta/models?**", lambda r: r.fulfill(json={"models": [
+        {"name": "models/gemini-old", "supportedGenerationMethods": ["generateContent"]}]}, headers={"access-control-allow-origin": "*"}))
+    page.route("https://generativelanguage.googleapis.com/v1beta/models/*:streamGenerateContent*", gen)
+    setup_provider(page, site, "gemini", "AQ.test", "gemini-old")
+    visualize_java(page, site)
+    assert "gemini-new-lite" in calls[-1]
+    expect(page.locator("#err")).to_contain_text("switched to gemini-new-lite")
+    expect(page.locator("#statusText")).to_contain_text("gemini-new-lite")
+
+
+def test_gemini_models_ranked_newest_first(page, site):
+    page.route("https://generativelanguage.googleapis.com/v1beta/models?**", lambda r: r.fulfill(json={"models": [
+        {"name": f"models/{n}", "supportedGenerationMethods": ["generateContent"]} for n in
+        ["gemini-2.5-flash-lite", "gemini-3.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-3.5-pro-preview"]]},
+        headers={"access-control-allow-origin": "*"}))
+    page.goto(site + "#home")
+    page.wait_for_selector("#homeTopics .prow")
+    page.click("#aiOpen")
+    page.select_option("#aiProvider", "gemini")
+    page.fill("#orKey", "AQ.test")
+    page.dispatch_event("#orKey", "change")
+    expect(page.locator("#orModel")).to_have_value("gemini-flash-latest")
+    order = page.evaluate("() => [...document.querySelectorAll('#orModels option')].map(o => o.value)")
+    assert order.index("gemini-3.5-flash") < order.index("gemini-2.5-flash-lite") < order.index("gemini-2.0-flash")

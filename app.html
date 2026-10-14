@@ -76,7 +76,8 @@ code,.mono{font-family:var(--f-mono);font-size:.88em}
 .cx div{padding:8px 10px;border-right:1px solid var(--line)}
 .cx div:last-child{border-right:0}
 .cx span{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
-.cx b{font-family:var(--f-mono);font-size:14px;white-space:nowrap;font-weight:600;font-variant-numeric:tabular-nums}
+.cx b{display:block;font-family:var(--f-mono);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;line-height:1.35}
+.cx small{display:block;font-size:11.5px;line-height:1.35;color:var(--ink-2);margin-top:2px;overflow-wrap:anywhere}
 .cx-note{font-size:13px;color:var(--ink-2);margin:8px 0 0}
 
 /* work area */
@@ -799,7 +800,19 @@ function parseJSONLoose(text){
 }
 
 /* One request to the selected provider, streamed. Returns the full text; onText gets progress. */
-async function callModel(prompt, {signal, onText, modelTier} = {}, wantJSON){
+async function callModel(prompt, opts = {}, wantJSON){
+  try { return await callModelOnce(prompt, opts, wantJSON); }
+  catch (e) {
+    const next = e && e.code === "bad_model" && (String(e.message).match(/\buse (?:models\/)?([\w.:-]+[\w])/i) || [])[1];
+    const p = current();
+    if (!next || next === local.get(K.model(p))) throw e;
+    const old = local.get(K.model(p));
+    local.set(K.model(p), next); renderAIStatus();
+    showErr(`${old} has been retired by ${PROVIDERS[p].name}, so AlgoScope switched to ${next}. You can change it in AI settings.`, true);
+    return callModelOnce(prompt, opts, wantJSON);
+  }
+}
+async function callModelOnce(prompt, {signal, onText, modelTier} = {}, wantJSON){
   const p = current(), P = PROVIDERS[p], key = keyStore.get(p), model = local.get(K.model(p)), base = baseOf(p);
   if (!key && !P.keyOptional) throw {code: "no_key"};
   if (!model) throw {code: "no_model"};
@@ -908,8 +921,10 @@ async function loadModels(){
       ids = [...new Set([...(P.models || []).filter(m => ids.includes(m)), ...ids])];
     } else if (P.kind === "gemini"){
       const j = await (await fetch(base + "/models?pageSize=200", {headers: {"x-goog-api-key": key}})).json();
-      ids = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent") && /gemini/.test(m.name) && !/embedding|image|tts|audio|live/.test(m.name))
-        .map(m => m.name.replace(/^models\//, "")).sort().reverse();
+      const ver = id => { const v = id.match(/gemini-(\d+(?:\.\d+)?)/); return v ? parseFloat(v[1]) : 0; };
+      const rank = id => (/-latest$/.test(id) ? 1000 : 0) + ver(id) * 10 - (/preview|exp/.test(id) ? 5 : 0) + (/pro/.test(id) ? 0.2 : /flash/.test(id) && !/lite/.test(id) ? 0.1 : 0);
+      ids = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent") && /gemini/.test(m.name) && !/embedding|image|tts|audio|live|robotics|computer-use/.test(m.name))
+        .map(m => m.name.replace(/^models\//, "")).sort((a, b) => rank(b) - rank(a));
     } else {
       const j = await (await fetch(base + "/models", {headers: key ? {Authorization: "Bearer " + key} : {}})).json();
       ids = (j.data || j.models || []).map(m => m.id || m.name).filter(Boolean);
@@ -1331,6 +1346,12 @@ function renderStep(){
   $("scrub").max = n - 1; $("scrub").value = S.step;
   if (S.mode === "trace") markLine();
 }
+/* "O(n) (but loops forever)" -> big-O in bold, the remark smaller below, so long AI answers don't overflow the box. */
+function cxCell(label, v){
+  const t = String(v ?? "–"), m = t.match(/^([OΘΩ]\((?:[^()]|\([^()]*\))*\))\s*[,;:—–-]?\s*(.*)$/);
+  const main = m ? m[1] : t, rest = m ? m[2].replace(/^\((.*)\)$/, "$1").trim() : "";
+  return `<div><span>${label}</span><b>${esc(main)}</b>${rest ? `<small>${esc(rest)}</small>` : ""}</div>`;
+}
 function issueNote(a){
   const i = a.issues; if (!a.ai || !i) return "";
   const parts = [];
@@ -1349,7 +1370,7 @@ function renderAll(){
       <div class="ov-io">${a.input ? `<div><b>Traced input:</b> <code>${esc(a.input)}</code></div>` : ""}${a.output ? `<div><b>${a.error ? "Error" : "Result"}:</b> <code>${esc(a.output)}</code></div>` : ""}${a.stdout ? `<div><b>Printed:</b> <code>${esc(a.stdout.length > 300 ? a.stdout.slice(0, 300) + "…" : a.stdout)}</code></div>` : ""}${a.capped ? `<div class="hint">This run is long, so a stretch of repetitive steps in the middle is skipped.</div>` : ""}${issueNote(a)}</div>
     </div>
     <div>
-      <div class="cx"><div><span>Best</span><b>${esc(c.best)}</b></div><div><span>Average</span><b>${esc(c.average)}</b></div><div><span>Worst</span><b>${esc(c.worst)}</b></div><div><span>Space</span><b>${esc(c.space)}</b></div></div>
+      <div class="cx">${[["Best", c.best], ["Average", c.average], ["Worst", c.worst], ["Space", c.space]].map(([k, v]) => cxCell(k, v)).join("")}</div>
       ${c.note ? `<p class="cx-note">${inline(c.note)}</p>` : ""}
     </div>`;
   const order = {bug: 0, differs: 1, risky: 2, ran: 3, ok: 4};
