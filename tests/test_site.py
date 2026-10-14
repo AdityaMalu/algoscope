@@ -186,3 +186,149 @@ def test_problem_pages(page, site):
 
 def test_sitemap(page, site):
     assert page.goto(site + "sitemap.xml").text().count("<loc>") == 161
+
+
+# ---------- bring-your-own-key providers (requests are intercepted; no real keys or network) ----------
+
+FAKE_TRACE = {"title": "Sum", "category": "Loop", "language": "Java", "summary": "Adds numbers.", "input": "[1, 2]", "output": "3",
+              "complexity": {"best": "O(n)", "average": "O(n)", "worst": "O(n)", "space": "O(1)"},
+              "intuition": ["Running total."], "pitfalls": ["Overflow."], "edgeCases": [],
+              "steps": [{"line": 2, "title": "Start", "explain": "s = 0", "vars": {"s": 0}, "structures": []},
+                        {"line": 3, "title": "Add", "explain": "s = 3", "vars": {"s": 3}, "structures": []}]}
+JAVA = "int sum(int[] a) {\n    int s = 0;\n    for (int x : a) s += x;\n    return s;\n}\n"
+
+
+def sse(events):
+    return "".join(f"data: {json.dumps(e)}\n\n" for e in events)
+
+
+def chunks(text, n=3):
+    k = max(1, len(text) // n)
+    return [text[i:i + k] for i in range(0, len(text), k)]
+
+
+def setup_provider(page, site, provider, key, model):
+    page.goto(site + "#home")
+    page.wait_for_selector("#homeTopics .prow")
+    page.click("#aiOpen")
+    page.select_option("#aiProvider", provider)
+    page.fill("#orKey", key)
+    page.fill("#orModel", model)
+    page.click("#aiSave")
+    expect(page.locator("#aiMsg")).to_contain_text("Using")
+    page.click("#aiClose")
+
+
+def visualize_java(page, site):
+    page.goto(site + "#code")
+    page.wait_for_selector("#editor", state="visible")
+    page.fill("#editor", JAVA)
+    page.select_option("#lang", "Java")
+    page.click("#runBtn")
+    expect(page.locator("#overview h2")).to_have_text("Sum", timeout=15000)
+    expect(page.locator("#overview .pill.warn")).to_contain_text("AI-generated")
+    expect(page.locator("#stepCount")).to_have_text("Step 1 of 2")
+
+
+def test_provider_list(app):
+    app.click("#aiOpen")
+    names = app.locator("#aiProvider option").all_inner_texts()
+    for n in ["OpenRouter", "Anthropic (Claude)", "OpenAI", "Google Gemini", "Groq", "Mistral", "DeepSeek", "xAI (Grok)"]:
+        assert n in names
+    app.select_option("#aiProvider", "anthropic")
+    expect(app.locator("#orKey")).to_have_attribute("placeholder", "sk-ant-…")
+    expect(app.locator("#aiSteps")).to_contain_text("console.anthropic.com")
+    app.fill("#orKey", "sk-wrong")
+    app.fill("#orModel", "claude-opus-5-5")
+    app.click("#aiSave")
+    expect(app.locator("#aiMsg")).to_contain_text("should start with sk-ant-")
+
+
+def test_anthropic_request(page, site):
+    seen = {}
+
+    def messages(route):
+        seen["headers"] = route.request.headers
+        seen["body"] = json.loads(route.request.post_data)
+        text = json.dumps(FAKE_TRACE)
+        events = [{"type": "message_start", "message": {"id": "m"}}, {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}]
+        events += [{"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": c}} for c in chunks(text)]
+        events += [{"type": "message_delta", "delta": {"stop_reason": "end_turn"}}, {"type": "message_stop"}]
+        route.fulfill(status=200, headers={"content-type": "text/event-stream", "access-control-allow-origin": "*"}, body=sse(events))
+
+    page.route("https://api.anthropic.com/v1/models**", lambda r: r.fulfill(json={"data": [{"id": "claude-opus-5-5"}, {"id": "claude-sonnet-5-5"}]}, headers={"access-control-allow-origin": "*"}))
+    page.route("https://api.anthropic.com/v1/messages", messages)
+    setup_provider(page, site, "anthropic", "sk-ant-test-key", "claude-opus-5-5")
+    visualize_java(page, site)
+    h, b = seen["headers"], seen["body"]
+    assert h["x-api-key"] == "sk-ant-test-key" and h["anthropic-version"] == "2023-06-01"
+    assert h["anthropic-dangerous-direct-browser-access"] == "true"
+    assert h["anthropic-beta"] == "server-side-fallback-2026-07-01" and b["fallbacks"] == "default"
+    assert b["model"] == "claude-opus-5-5" and b["stream"] is True and b["output_config"]["effort"] == "medium"
+
+
+def test_gemini_request(page, site):
+    seen = {}
+
+    def gen(route):
+        seen["url"], seen["headers"] = route.request.url, route.request.headers
+        events = [{"candidates": [{"content": {"parts": [{"text": c}]}}]} for c in chunks(json.dumps(FAKE_TRACE))]
+        route.fulfill(status=200, headers={"content-type": "text/event-stream", "access-control-allow-origin": "*"}, body=sse(events))
+
+    page.route("https://generativelanguage.googleapis.com/v1beta/models?**", lambda r: r.fulfill(json={"models": [
+        {"name": "models/gemini-test-flash", "supportedGenerationMethods": ["generateContent"]}]}, headers={"access-control-allow-origin": "*"}))
+    page.route("https://generativelanguage.googleapis.com/v1beta/models/*:streamGenerateContent*", gen)
+    setup_provider(page, site, "gemini", "AIzaTestKey", "gemini-test-flash")
+    visualize_java(page, site)
+    assert "gemini-test-flash:streamGenerateContent?alt=sse" in seen["url"] and seen["headers"]["x-goog-api-key"] == "AIzaTestKey"
+
+
+def test_openai_compatible_request(page, site):
+    seen = {}
+
+    def chat(route):
+        seen["headers"], seen["body"] = route.request.headers, json.loads(route.request.post_data)
+        events = [{"choices": [{"delta": {"content": c}}]} for c in chunks(json.dumps(FAKE_TRACE))]
+        route.fulfill(status=200, headers={"content-type": "text/event-stream", "access-control-allow-origin": "*"}, body=sse(events) + "data: [DONE]\n\n")
+
+    page.route("https://api.openai.com/v1/models", lambda r: r.fulfill(json={"data": [{"id": "gpt-test"}, {"id": "text-embedding-3"}]}, headers={"access-control-allow-origin": "*"}))
+    page.route("https://api.openai.com/v1/chat/completions", chat)
+    setup_provider(page, site, "openai", "sk-test-openai", "gpt-test")
+    visualize_java(page, site)
+    assert seen["headers"]["authorization"] == "Bearer sk-test-openai"
+    assert seen["body"]["model"] == "gpt-test" and "max_completion_tokens" in seen["body"]
+
+
+def test_bad_key_message(page, site):
+    page.route("https://api.groq.com/openai/v1/models", lambda r: r.fulfill(status=401, json={"error": {"message": "Invalid API Key"}}, headers={"access-control-allow-origin": "*"}))
+    page.route("https://api.groq.com/openai/v1/chat/completions", lambda r: r.fulfill(status=401, json={"error": {"message": "Invalid API Key"}}, headers={"access-control-allow-origin": "*"}))
+    setup_provider(page, site, "groq", "gsk_bad", "some-model")
+    page.goto(site + "#code")
+    page.wait_for_selector("#editor", state="visible")
+    page.fill("#editor", JAVA)
+    page.select_option("#lang", "Java")
+    page.click("#runBtn")
+    expect(page.locator("#err")).to_contain_text("rejected the key")
+
+
+def test_old_openrouter_key_is_migrated(page, site):
+    page.goto(site + "#home")
+    page.evaluate("() => { localStorage.setItem('algoscope:openrouterKey', 'sk-or-v1-old'); localStorage.setItem('algoscope:openrouterModel', 'x/y:free'); }")
+    page.reload()
+    page.wait_for_selector("#homeTopics .prow")
+    assert page.evaluate("() => localStorage.getItem('algoscope:key:openrouter')") == "sk-or-v1-old"
+    expect(page.locator("#statusText")).to_contain_text("OpenRouter · x/y")
+
+
+def test_switching_provider_ignores_stale_model_list(page, site):
+    def slow(route):
+        page.wait_for_timeout(700)
+        route.fulfill(json={"data": [{"id": "vendor/slow:free"}]}, headers={"access-control-allow-origin": "*"})
+    page.route("https://openrouter.ai/api/v1/models", slow)
+    page.goto(site + "#home")
+    page.wait_for_selector("#homeTopics .prow")
+    page.click("#aiOpen")
+    page.select_option("#aiProvider", "gemini")
+    page.wait_for_timeout(1200)
+    assert "slow" not in page.input_value("#orModel")
+    expect(page.locator("#orModelHint")).to_contain_text("Add a key")

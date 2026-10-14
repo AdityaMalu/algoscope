@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JTOV3rXHOxgcYABlFBHXV0F8TF4v9qdwAa12JXHMtiA=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Yo6wMe0VVwqPF5JheUWPNIH8A8kIOs1rYDLzhNOraE8=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.groq.com https://api.mistral.ai https://api.deepseek.com https://api.x.ai https://api.together.xyz https://api.cerebras.ai https://api.fireworks.ai http://localhost:* http://127.0.0.1:*; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++. Paste your own Python and watch it run.">
 <link rel="canonical" href="https://adityamalu.github.io/algoscope/">
@@ -377,28 +377,32 @@ ul.pts code{background:var(--sunk);padding:1px 4px;border-radius:4px}
     <div class="modal-card" role="dialog" aria-labelledby="aiTitle">
       <h2 id="aiTitle">AI for your own code</h2>
       <p class="note">The 159 problems from the sheet never need a key, and neither does pasted <b>Python</b>: it runs for real in your browser. A key is used to trace other languages, to add an AI overview and edge cases to your Python, and for <b>Ask</b>.</p>
-      <p class="note" id="aiInClaude" hidden>You're viewing this inside claude.ai, so your own code is traced with your Claude account. claude.ai pages can't contact other AI services; to use an OpenRouter key, open the GitHub Pages version of AlgoScope.</p>
+      <p class="note" id="aiInClaude" hidden>You're viewing this inside claude.ai, so your own code is traced with your Claude account. claude.ai pages can't contact other AI services; to use your own key, open the GitHub Pages version of AlgoScope.</p>
       <div>
-        <label for="orKey">OpenRouter API key</label>
-        <div class="keyrow"><input id="orKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-or-v1-…"><button class="btn" id="orShow" type="button">Show</button></div>
-        <label class="check"><input type="checkbox" id="orRemember"> Remember the key on this device</label>
-        <p class="hint" style="margin:6px 0 0">Unticked, the key is kept only until you close this tab. Either way it stays in this browser and is sent only to openrouter.ai. Tip: set a credit limit of $0 on the key at openrouter.ai, so it can only use free models.</p>
+        <label for="aiProvider">Provider</label>
+        <select class="full" id="aiProvider"></select>
+        <p class="hint" id="aiFree" style="margin:6px 0 0"></p>
+      </div>
+      <div id="aiBaseRow" hidden>
+        <label for="aiBase">Server address</label>
+        <input id="aiBase" type="url" spellcheck="false" autocomplete="off" placeholder="http://localhost:11434/v1">
       </div>
       <div>
-        <label for="orModel">Free model</label>
-        <select class="full" id="orModel"><option value="">Add a key to load the free models</option></select>
+        <label for="orKey" id="orKeyLabel">API key</label>
+        <div class="keyrow"><input id="orKey" type="password" autocomplete="off" spellcheck="false"><button class="btn" id="orShow" type="button">Show</button></div>
+        <label class="check"><input type="checkbox" id="orRemember"> Remember the key on this device</label>
+        <p class="hint" style="margin:6px 0 0">Unticked, the key is kept only until you close this tab. Either way it stays in this browser and is sent only to the provider you picked. Each provider keeps its own key, so you can switch freely. Tip: set a spending limit on the key in the provider's dashboard.</p>
+      </div>
+      <div>
+        <label for="orModel">Model</label>
+        <input class="full" id="orModel" list="orModels" spellcheck="false" autocomplete="off" placeholder="Pick or type a model id">
+        <datalist id="orModels"></datalist>
         <p class="hint" id="orModelHint" style="margin:6px 0 0"></p>
       </div>
       <div>
-        <label>Get a free key (about a minute)</label>
-        <ol>
-          <li>Go to <a href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a> and sign in (Google or GitHub works). No card needed.</li>
-          <li>Open <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener">Settings → API Keys</a> and press <b>Create key</b>. Give it a name like "AlgoScope".</li>
-          <li>Copy the key (it starts with <code>sk-or-v1-</code>). It's shown only once.</li>
-          <li>Paste it above and press <b>Save</b>, then pick a model ending in <code>:free</code>.</li>
-        </ol>
+        <label>Get a key</label>
+        <ol id="aiSteps"></ol>
       </div>
-      <p class="note">Free limits: about 20 requests a minute and 50 a day (1,000 a day once you've ever bought $10 of credits). One trace is one request. Free models are less accurate than Claude, so double-check surprising traces.</p>
       <div class="row"><button class="btn primary" id="aiSave" type="button">Save</button><button class="btn" id="aiClear" type="button">Remove key</button><button class="btn ghost" id="aiClose" type="button">Close</button></div>
       <p class="msg info" id="aiMsg" hidden></p>
     </div>
@@ -719,32 +723,88 @@ function libView(){
     steps: alt ? steps.map(st => ({...st, line: alt.lines[st.line] || 0})) : steps,
     input: e ? e.input : b.input, output: e ? e.actual : b.output, capped: e ? !!e.capped : b.capped};
 }
-/* ---------- AI access: Claude inside claude.ai, otherwise the viewer's own OpenRouter key ---------- */
+/* ---------- AI access: Claude inside claude.ai, otherwise the viewer's own key for one of several providers ---------- */
 const IN_CLAUDE = !!(window.claude && typeof window.claude.use === "function");
 let sampleFn = null;
 const samplePromise = IN_CLAUDE ? window.claude.use("sample").catch(() => null) : Promise.resolve(null);
-const KEYS = { key: "algoscope:openrouterKey", model: "algoscope:openrouterModel" };
+/* Every provider here accepts requests straight from a browser (CORS), so keys never pass through a server of ours.
+   kind: "openai" = OpenAI-compatible /chat/completions, "anthropic" = Messages API, "gemini" = generateContent. */
+const PROVIDERS = {
+  openrouter: {name: "OpenRouter", kind: "openai", base: "https://openrouter.ai/api/v1", keyPrefix: "sk-or-", placeholder: "sk-or-v1-…",
+    keyUrl: "https://openrouter.ai/settings/keys", free: "Free models (ending in :free): about 20 requests a minute, 50 a day. No card needed.",
+    steps: ["Sign in at openrouter.ai (Google or GitHub works).", "Open Settings → API Keys and press Create key.", "Copy the key (starts with sk-or-v1-)."]},
+  anthropic: {name: "Anthropic (Claude)", kind: "anthropic", base: "https://api.anthropic.com/v1", keyPrefix: "sk-ant-", placeholder: "sk-ant-…",
+    keyUrl: "https://console.anthropic.com/settings/keys", free: "Paid: needs credits on the Anthropic Console. Claude gives the most accurate traces.",
+    models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
+    steps: ["Sign in to the Anthropic Console and add credits under Billing.", "Open Settings → API Keys and press Create Key.", "Copy the key (starts with sk-ant-)."]},
+  openai: {name: "OpenAI", kind: "openai", base: "https://api.openai.com/v1", keyPrefix: "sk-", placeholder: "sk-…",
+    keyUrl: "https://platform.openai.com/api-keys", free: "Paid: needs credits on platform.openai.com (separate from a ChatGPT subscription).",
+    filter: id => /^(gpt-|o\d|chatgpt-)/.test(id) && !/audio|realtime|transcribe|tts|image|search|instruct|embedding/.test(id),
+    steps: ["Sign in at platform.openai.com and add credits under Billing.", "Open API keys and press Create new secret key.", "Copy the key (starts with sk-)."]},
+  gemini: {name: "Google Gemini", kind: "gemini", base: "https://generativelanguage.googleapis.com/v1beta", keyPrefix: "AIza", placeholder: "AIza…",
+    keyUrl: "https://aistudio.google.com/apikey", free: "Free tier with daily limits; no card needed.",
+    steps: ["Sign in at Google AI Studio with a Google account.", "Press Get API key → Create API key.", "Copy the key (starts with AIza)."]},
+  groq: {name: "Groq", kind: "openai", base: "https://api.groq.com/openai/v1", keyPrefix: "gsk_", placeholder: "gsk_…",
+    keyUrl: "https://console.groq.com/keys", free: "Free tier with per-minute and daily limits; very fast open models.",
+    steps: ["Sign in at console.groq.com.", "Open API Keys and press Create API Key.", "Copy the key (starts with gsk_)."]},
+  mistral: {name: "Mistral", kind: "openai", base: "https://api.mistral.ai/v1", keyPrefix: "", placeholder: "Mistral API key",
+    keyUrl: "https://console.mistral.ai/api-keys", free: "Free 'Experiment' plan with rate limits (phone verification).",
+    steps: ["Sign in at console.mistral.ai and pick a plan (Experiment is free).", "Open API Keys and press Create new key.", "Copy the key."]},
+  deepseek: {name: "DeepSeek", kind: "openai", base: "https://api.deepseek.com", keyPrefix: "sk-", placeholder: "sk-…",
+    keyUrl: "https://platform.deepseek.com/api_keys", free: "Paid, but very cheap. Top up a small balance first.",
+    steps: ["Sign in at platform.deepseek.com and top up a balance.", "Open API keys and press Create new API key.", "Copy the key (starts with sk-)."]},
+  xai: {name: "xAI (Grok)", kind: "openai", base: "https://api.x.ai/v1", keyPrefix: "xai-", placeholder: "xai-…",
+    keyUrl: "https://console.x.ai", free: "Paid: needs credits on the xAI console.",
+    steps: ["Sign in at console.x.ai and add credits.", "Open API Keys and create a key.", "Copy the key (starts with xai-)."]},
+  together: {name: "Together AI", kind: "openai", base: "https://api.together.xyz/v1", keyPrefix: "", placeholder: "Together API key",
+    keyUrl: "https://api.together.ai/settings/api-keys", free: "Paid, with some free models.",
+    steps: ["Sign in at together.ai.", "Open Settings → API Keys.", "Copy the key."]},
+  cerebras: {name: "Cerebras", kind: "openai", base: "https://api.cerebras.ai/v1", keyPrefix: "csk-", placeholder: "csk-…",
+    keyUrl: "https://cloud.cerebras.ai", free: "Free tier with daily limits; very fast.",
+    steps: ["Sign in at cloud.cerebras.ai.", "Open API Keys and create a key.", "Copy the key (starts with csk-)."]},
+  fireworks: {name: "Fireworks AI", kind: "openai", base: "https://api.fireworks.ai/inference/v1", keyPrefix: "fw_", placeholder: "fw_…",
+    keyUrl: "https://fireworks.ai/account/api-keys", free: "Paid, with starter credits.",
+    steps: ["Sign in at fireworks.ai.", "Open Account → API Keys and create a key.", "Copy the key (starts with fw_)."]},
+  local: {name: "Local model (Ollama, LM Studio)", kind: "openai", base: "http://localhost:11434/v1", keyPrefix: "", placeholder: "Not needed for Ollama",
+    keyOptional: true, editableBase: true, free: "Runs on your own computer, free and private. Needs Ollama or LM Studio running and allowing this site.",
+    steps: ["Install Ollama (ollama.com) and run a model, e.g. ollama pull qwen2.5-coder.",
+            "Start it allowing this site: set OLLAMA_ORIGINS=https://adityamalu.github.io, then ollama serve.",
+            "Leave the address as http://localhost:11434/v1 (LM Studio: http://localhost:1234/v1)."]}
+};
 const local = {
   get(k){ try { return localStorage.getItem(k) || ""; } catch { return ""; } },
   set(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch {} }
 };
-/* The key lives in sessionStorage (gone when the tab closes) unless the viewer ticks "Remember". */
+const K = {provider: "algoscope:provider", key: p => "algoscope:key:" + p, model: p => "algoscope:model:" + p, base: p => "algoscope:base:" + p};
+/* Keys live in sessionStorage (gone when the tab closes) unless the viewer ticks "Remember". */
 const keyStore = {
-  get(){ try { return sessionStorage.getItem(KEYS.key) || localStorage.getItem(KEYS.key) || ""; } catch { return ""; } },
-  remembered(){ try { return !!localStorage.getItem(KEYS.key); } catch { return false; } },
-  set(v, remember){ try { localStorage.removeItem(KEYS.key); sessionStorage.removeItem(KEYS.key); if (v) (remember ? localStorage : sessionStorage).setItem(KEYS.key, v); } catch {} }
+  get(p){ try { return sessionStorage.getItem(K.key(p)) || localStorage.getItem(K.key(p)) || ""; } catch { return ""; } },
+  remembered(p){ try { return !!localStorage.getItem(K.key(p)); } catch { return false; } },
+  set(p, v, remember){ try { localStorage.removeItem(K.key(p)); sessionStorage.removeItem(K.key(p)); if (v) (remember ? localStorage : sessionStorage).setItem(K.key(p), v); } catch {} }
 };
+/* Older versions kept a single OpenRouter key; move it to the per-provider slot once. */
+(() => { try {
+  for (const s of [localStorage, sessionStorage]){
+    const old = s.getItem("algoscope:openrouterKey");
+    if (old){ s.setItem(K.key("openrouter"), old); s.removeItem("algoscope:openrouterKey"); if (!local.get(K.provider)) local.set(K.provider, "openrouter"); }
+  }
+  const m = localStorage.getItem("algoscope:openrouterModel");
+  if (m){ localStorage.setItem(K.model("openrouter"), m); localStorage.removeItem("algoscope:openrouterModel"); }
+} catch {} })();
+const current = () => { const id = local.get(K.provider); return PROVIDERS[id] ? id : "openrouter"; };
+const baseOf = p => (PROVIDERS[p].editableBase && local.get(K.base(p))) || PROVIDERS[p].base;
+const hasCreds = p => !!(keyStore.get(p) || PROVIDERS[p].keyOptional && local.get(K.model(p)));
+
 const AI = {
-  provider(){ return IN_CLAUDE ? (sampleFn ? "claude" : null) : (keyStore.get() ? "openrouter" : null); },
+  provider(){ return IN_CLAUDE ? (sampleFn ? "claude" : null) : (hasCreds(current()) ? current() : null); },
   async ready(){ if (IN_CLAUDE) await samplePromise; return AI.provider(); },
   async text(prompt, opts){
     if (AI.provider() === "claude") return (await sampleFn(prompt, opts)).text;
-    return orStream(prompt, opts);
+    return callModel(prompt, opts || {}, false);
   },
   async json(prompt, opts){
     if (AI.provider() === "claude") return sampleFn.json(prompt, opts);
-    const text = await orStream(prompt + "\n\nYour reply is parsed by a program: output one JSON object and nothing else.", opts);
-    return parseJSONLoose(text);
+    return parseJSONLoose(await callModel(prompt + "\n\nYour reply is parsed by a program: output one JSON object and nothing else.", opts || {}, true));
   }
 };
 function parseJSONLoose(text){
@@ -755,24 +815,62 @@ function parseJSONLoose(text){
   for (const x of tries){ try { return JSON.parse(x); } catch {} }
   throw {code: "invalid_json", text: t};
 }
-async function orStream(prompt, {signal, onText} = {}){
-  const key = keyStore.get(), model = local.get(KEYS.model);
-  if (!key) throw {code: "no_key"};
+
+/* One request to the selected provider, streamed. Returns the full text; onText gets progress. */
+async function callModel(prompt, {signal, onText, modelTier} = {}, wantJSON){
+  const p = current(), P = PROVIDERS[p], key = keyStore.get(p), model = local.get(K.model(p)), base = baseOf(p);
+  if (!key && !P.keyOptional) throw {code: "no_key"};
   if (!model) throw {code: "no_model"};
+  let url, headers = {"Content-Type": "application/json"}, body, pick;
+  if (P.kind === "anthropic"){
+    url = base + "/messages";
+    Object.assign(headers, {"x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"});
+    body = {model, max_tokens: 64000, stream: true, messages: [{role: "user", content: prompt}]};
+    // Effort: how hard the model thinks. Only current models accept it.
+    if (/^claude-(fable|mythos|opus|sonnet|haiku)-5|^claude-opus-4-[5-8]|^claude-sonnet-4-6/.test(model))
+      body.output_config = {effort: modelTier === "quick" ? "low" : modelTier === "complex" ? "high" : "medium"};
+    // If a safety classifier declines, let the API retry on a suitable fallback model inside the same call.
+    if (/^claude-(fable-5-1|opus-5-5|opus-5|sonnet-5-5)$/.test(model)){ headers["anthropic-beta"] = "server-side-fallback-2026-07-01"; body.fallbacks = "default"; }
+    pick = j => {
+      if (j.type === "content_block_delta" && j.delta && j.delta.type === "text_delta") return j.delta.text;
+      if (j.type === "message_delta" && j.delta && j.delta.stop_reason === "refusal") throw {code: "refused"};
+      if (j.type === "error") throw {code: "upstream_error", message: j.error && j.error.message};
+      return "";
+    };
+  } else if (P.kind === "gemini"){
+    url = `${base}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
+    headers["x-goog-api-key"] = key;
+    body = {contents: [{role: "user", parts: [{text: prompt}]}], generationConfig: wantJSON ? {responseMimeType: "application/json"} : {}};
+    pick = j => {
+      if (j.error) throw {code: "upstream_error", message: j.error.message};
+      const c = j.candidates && j.candidates[0];
+      if (c && c.finishReason === "SAFETY") throw {code: "refused"};
+      return ((c && c.content && c.content.parts) || []).filter(x => !x.thought).map(x => x.text || "").join("");
+    };
+  } else {
+    url = base + "/chat/completions";
+    if (key) headers.Authorization = "Bearer " + key;
+    if (p === "openrouter") Object.assign(headers, {"HTTP-Referer": location.origin, "X-Title": "AlgoScope"});
+    body = {model, stream: true, messages: [{role: "user", content: prompt}]};
+    if (p === "openai") body.max_completion_tokens = 32000; else if (p !== "local") body.max_tokens = 16000;
+    pick = j => {
+      if (j.error) throw {code: "upstream_error", message: j.error.message || String(j.error)};
+      const d = j.choices && j.choices[0] && j.choices[0].delta;
+      return (d && d.content) || "";
+    };
+  }
   let res;
-  try {
-    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST", signal,
-      headers: {"Authorization": "Bearer " + key, "Content-Type": "application/json", "HTTP-Referer": location.origin, "X-Title": "AlgoScope"},
-      body: JSON.stringify({model, stream: true, max_tokens: 16000, messages: [{role: "user", content: prompt}]})
-    });
-  } catch (e) {
+  try { res = await fetch(url, {method: "POST", signal, headers, body: JSON.stringify(body)}); }
+  catch (e) {
     if (signal && signal.aborted) throw {code: "cancelled"};
-    throw {code: "network"};
+    throw {code: p === "local" ? "local_unreachable" : "network"};
   }
   if (!res.ok){
-    let msg = ""; try { msg = (await res.json()).error?.message || ""; } catch {}
-    throw {code: res.status === 401 ? "bad_key" : res.status === 402 ? "no_credit" : res.status === 429 ? "or_rate_limited" : "upstream_error", message: msg};
+    let msg = "";
+    try { const j = await res.json(); const e = Array.isArray(j) ? j[0] && j[0].error : j.error; msg = (e && (e.message || e)) || j.message || ""; } catch {}
+    msg = String(msg).slice(0, 300);
+    const bad = res.status === 401 || res.status === 403 || /API_KEY_INVALID|invalid.*key|incorrect api key/i.test(msg);
+    throw {code: bad ? "bad_key" : res.status === 402 ? "no_credit" : res.status === 429 ? "or_rate_limited" : res.status === 404 ? "bad_model" : "upstream_error", message: msg};
   }
   const reader = res.body.getReader(), dec = new TextDecoder();
   let buf = "", text = "";
@@ -786,76 +884,121 @@ async function orStream(prompt, {signal, onText} = {}){
         const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
         if (!line.startsWith("data:")) continue;
         const data = line.slice(5).trim();
-        if (data === "[DONE]") continue;
+        if (!data || data === "[DONE]") continue;
         let j; try { j = JSON.parse(data); } catch { continue; }
-        if (j.error) throw {code: "upstream_error", message: j.error.message, text};
-        const d = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+        const d = pick(j);
         if (d){ text += d; onText && onText({text, delta: d}); }
       }
     }
   } catch (e) {
     if (signal && signal.aborted) throw {code: "cancelled", text};
-    throw e && e.code ? e : {code: "upstream_error", text};
+    throw e && e.code ? {...e, text} : {code: "upstream_error", text};
   }
   if (!text.trim()) throw {code: "empty_completion"};
   return text;
 }
+
 function renderAIStatus(){
   const p = AI.provider();
   $("dot").className = "dot " + (p ? "on" : "off");
   $("statusText").textContent = p === "claude" ? "Claude connected"
-    : p === "openrouter" ? "OpenRouter · " + (local.get(KEYS.model).replace(/:free$/, "") || "pick a model")
-    : IN_CLAUDE ? "Claude unavailable" : "Add a free key to trace your own code";
-  $("tier").hidden = p === "openrouter";
+    : p ? PROVIDERS[p].name.replace(/ \(.*\)$/, "") + " · " + (local.get(K.model(p)).replace(/:free$/, "").replace(/^models\//, "") || "pick a model")
+    : IN_CLAUDE ? "Claude unavailable" : "Add an AI key to trace other languages";
+  $("tier").hidden = !(p === "claude" || p === "anthropic");
 }
 samplePromise.then(fn => { sampleFn = fn; renderAIStatus(); });
-async function loadFreeModels(){
-  const sel = $("orModel"), hint = $("orModelHint");
-  if (IN_CLAUDE) { sel.disabled = true; return; }
-  hint.textContent = "Loading the current free models…";
+
+/* Model list for the selected provider, loaded live when possible (it changes often). */
+let modelsReq = 0;
+async function loadModels(){
+  const req = ++modelsReq, stale = () => req !== modelsReq;  // a newer load (e.g. another provider) wins
+  const p = $("aiProvider").value, P = PROVIDERS[p], hint = $("orModelHint"), dl = $("orModels");
+  const key = $("orKey").value.trim() || keyStore.get(p), base = ($("aiBase").value.trim() || P.base).replace(/\/+$/, "");
+  dl.innerHTML = ""; const fill = ids => { dl.innerHTML = ids.map(id => `<option value="${esc(id)}"></option>`).join(""); };
+  if (P.models) fill(P.models);
+  if (!key && !P.keyOptional && p !== "openrouter"){ hint.textContent = "Add a key to load this provider's models, or type a model id."; return; }
+  hint.textContent = "Loading the current models…";
   try {
-    const r = await fetch("https://openrouter.ai/api/v1/models");
-    /* Rank free models: drop safety classifiers, push tiny models down, prefer the largest parameter counts. */
-    const score = id => {
-      if (/safety|guard|embed/i.test(id)) return -1e9;
-      const sizes = [...id.matchAll(/(\d+(?:\.\d+)?)b(?![a-z])/gi)].map(x => parseFloat(x[1]));
-      let s = sizes.length ? Math.max(...sizes) : 100;
-      if (/small|mini|nano|lite|(^|[-/])xs([-:]|$)|lightning|preview/i.test(id)) s -= 1000;
-      return s;
-    };
-    const list = ((await r.json()).data || []).filter(m => /:free$/.test(m.id) && score(m.id) > -1e9)
-      .sort((a, b) => score(b.id) - score(a.id));
-    if (!list.length) throw 0;
-    const saved = local.get(KEYS.model);
-    const pick = saved && list.some(m => m.id === saved) ? saved : list[0].id;
-    sel.innerHTML = list.map(m => `<option value="${esc(m.id)}"${m.id === pick ? " selected" : ""}>${esc(m.name || m.id)}</option>`).join("");
-    hint.textContent = list.length + " free models available right now. If one is slow or busy, try another.";
+    let ids = [];
+    if (P.kind === "anthropic"){
+      const j = await (await fetch(base + "/models?limit=100", {headers: {"x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true"}})).json();
+      ids = (j.data || []).map(m => m.id);
+      ids = [...new Set([...(P.models || []).filter(m => ids.includes(m)), ...ids])];
+    } else if (P.kind === "gemini"){
+      const j = await (await fetch(base + "/models?pageSize=200", {headers: {"x-goog-api-key": key}})).json();
+      ids = (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent") && /gemini/.test(m.name) && !/embedding|image|tts|audio|live/.test(m.name))
+        .map(m => m.name.replace(/^models\//, "")).sort().reverse();
+    } else {
+      const j = await (await fetch(base + "/models", {headers: key ? {Authorization: "Bearer " + key} : {}})).json();
+      ids = (j.data || j.models || []).map(m => m.id || m.name).filter(Boolean);
+      if (p === "openrouter"){
+        /* Rank free models: drop safety classifiers, push tiny models down, prefer the largest parameter counts. */
+        const score = id => { const s = [...id.matchAll(/(\d+(?:\.\d+)?)b(?![a-z])/gi)].map(x => parseFloat(x[1]));
+          return (s.length ? Math.max(...s) : 100) - (/small|mini|nano|lite|(^|[-/])xs([-:]|$)|lightning|preview/i.test(id) ? 1000 : 0); };
+        ids = ids.filter(id => /:free$/.test(id) && !/safety|guard|embed/i.test(id)).sort((a, b) => score(b) - score(a));
+      } else {
+        ids = ids.filter(id => (P.filter ? P.filter(id) : true) && !/embed|whisper|tts|audio|guard|rerank|moderation|image|vision-only|transcribe/i.test(id)).sort();
+      }
+    }
+    if (stale()) return;
+    if (!ids.length) throw 0;
+    fill(ids);
+    const input = $("orModel");
+    if (!input.value || !ids.includes(input.value)) input.value = local.get(K.model(p)) && ids.includes(local.get(K.model(p))) ? local.get(K.model(p)) : ids[0];
+    hint.textContent = `${ids.length} model${ids.length === 1 ? "" : "s"} available. Click the box to pick another, or type any model id.`;
   } catch {
-    hint.textContent = "Couldn't load the model list. You can still type a model id ending in :free.";
-    sel.outerHTML = `<input id="orModel" type="text" placeholder="e.g. deepseek/deepseek-chat-v3-0324:free" value="${esc(local.get(KEYS.model))}">`;
+    if (stale()) return;
+    hint.textContent = p === "local" ? "Couldn't reach the local server. Is it running and allowing this site? You can still type a model name."
+      : "Couldn't load the model list (check the key). You can still type a model id.";
   }
 }
+function showProvider(p){
+  const P = PROVIDERS[p];
+  $("aiProvider").value = p;
+  $("orKey").value = keyStore.get(p); $("orKey").placeholder = P.placeholder; $("orRemember").checked = keyStore.remembered(p);
+  $("orKeyLabel").textContent = P.name.replace(/ \(.*\)$/, "") + " API key" + (P.keyOptional ? " (optional)" : "");
+  $("aiBaseRow").hidden = !P.editableBase; $("aiBase").value = P.editableBase ? baseOf(p) : "";
+  $("orModel").value = local.get(K.model(p)) || (P.models ? P.models[0] : "");
+  $("aiFree").textContent = P.free;
+  $("aiSteps").innerHTML = P.steps.map(s => `<li>${esc(s)}</li>`).join("") + (P.keyUrl ? `<li>Get the key at <a href="${esc(P.keyUrl)}" target="_blank" rel="noopener">${esc(P.keyUrl.replace(/^https:\/\//, ""))}</a>, paste it above and press <b>Save</b>.</li>` : `<li>Press <b>Save</b>.</li>`);
+  $("aiMsg").hidden = true;
+  loadModels();
+}
 function openAI(){
-  $("aiModal").hidden = false; $("aiInClaude").hidden = !IN_CLAUDE; $("aiMsg").hidden = true;
-  $("orKey").value = keyStore.get(); $("orKey").disabled = IN_CLAUDE; $("orRemember").checked = keyStore.remembered();
-  loadFreeModels(); $("orKey").focus();
+  $("aiModal").hidden = false; $("aiInClaude").hidden = !IN_CLAUDE;
+  for (const el of ["aiProvider", "orKey", "orModel", "aiSave", "aiClear"]) $(el).disabled = IN_CLAUDE;
+  showProvider(current()); $("orKey").focus();
 }
 function closeAI(){ $("aiModal").hidden = true; $("aiOpen").focus(); }
+$("aiProvider").innerHTML = Object.entries(PROVIDERS).map(([id, P]) => `<option value="${id}">${esc(P.name)}</option>`).join("");
+$("aiProvider").onchange = () => showProvider($("aiProvider").value);
+$("orKey").addEventListener("change", loadModels);
+$("aiBase").addEventListener("change", loadModels);
 $("aiOpen").onclick = openAI;
 $("aiClose").onclick = closeAI;
 $("aiModal").addEventListener("click", e => { if (e.target.id === "aiModal") closeAI(); });
 $("aiModal").addEventListener("keydown", e => { if (e.key === "Escape") closeAI(); e.stopPropagation(); });
 $("orShow").onclick = () => { const k = $("orKey"); k.type = k.type === "password" ? "text" : "password"; $("orShow").textContent = k.type === "password" ? "Show" : "Hide"; };
 $("aiSave").onclick = () => {
-  const key = $("orKey").value.trim(), model = ($("orModel").value || "").trim();
-  const m = $("aiMsg"); m.hidden = false;
-  if (key && !/^sk-or-/.test(key)){ m.className = "msg"; m.textContent = "That doesn't look like an OpenRouter key. It should start with sk-or-."; return; }
-  if (key && !model){ m.className = "msg"; m.textContent = "Pick a free model too."; return; }
-  keyStore.set(key, $("orRemember").checked); local.set(KEYS.model, model);
-  m.className = "msg info"; m.textContent = key ? ($("orRemember").checked ? "Saved in this browser." : "Saved for this tab only. It is forgotten when you close it.") + " Paste your code and press Visualize." : "No key saved.";
+  const p = $("aiProvider").value, P = PROVIDERS[p];
+  const key = $("orKey").value.trim(), model = ($("orModel").value || "").trim(), m = $("aiMsg"); m.hidden = false;
+  if (key && P.keyPrefix && !key.startsWith(P.keyPrefix)){ m.className = "msg"; m.textContent = `That doesn't look like a ${P.name} key. It should start with ${P.keyPrefix}.`; return; }
+  if (!key && !P.keyOptional){ m.className = "msg"; m.textContent = "Paste a key first."; return; }
+  if (!model){ m.className = "msg"; m.textContent = "Pick or type a model too."; return; }
+  if (P.editableBase){
+    const b = $("aiBase").value.trim().replace(/\/+$/, "");
+    if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(b + "/")){ m.className = "msg"; m.textContent = "For privacy, a local model must run on this computer: use an http://localhost address."; return; }
+    local.set(K.base(p), b);
+  }
+  keyStore.set(p, key, $("orRemember").checked); local.set(K.model(p), model); local.set(K.provider, p);
+  m.className = "msg info"; m.textContent = `Using ${P.name} · ${model}. ` + (key ? ($("orRemember").checked ? "Key saved in this browser." : "Key kept for this tab only.") : "") + " Paste your code and press Visualize.";
   renderAIStatus();
 };
-$("aiClear").onclick = () => { keyStore.set(""); $("orKey").value = ""; const m = $("aiMsg"); m.hidden = false; m.className = "msg info"; m.textContent = "Key removed from this browser."; renderAIStatus(); };
+$("aiClear").onclick = () => {
+  const p = $("aiProvider").value; keyStore.set(p, ""); $("orKey").value = "";
+  if (PROVIDERS[p].keyOptional) local.set(K.model(p), "");
+  const m = $("aiMsg"); m.hidden = false; m.className = "msg info"; m.textContent = `${PROVIDERS[p].name} key removed from this browser.`; renderAIStatus();
+};
 renderAIStatus();
 
 const store = {
@@ -1356,15 +1499,17 @@ const ERR = {
   empty_completion: "Claude returned nothing. Try again with a smaller input.",
   empty_trace: "The analysis had no steps to show. Try again, or give an explicit input.",
   cancelled: "Stopped.",
-  no_key: "Add a free OpenRouter key in AI settings to trace your own code.",
-  no_model: "Pick a free model in AI settings.",
-  bad_key: "OpenRouter rejected the key. Check it in AI settings.",
-  no_credit: "OpenRouter says the account balance is negative. Free models need a balance of at least zero.",
-  or_rate_limited: "The free OpenRouter limit was reached (about 20 a minute, 50 a day). Wait a bit, or try another free model.",
-  network: "Couldn't reach OpenRouter. Check your connection.",
+  no_key: "Add an AI key in AI settings to trace your own code.",
+  no_model: "Pick a model in AI settings.",
+  bad_model: "The provider doesn't know that model. Pick another one in AI settings.",
+  local_unreachable: "Couldn't reach the local model server. Is it running, and does it allow this site (OLLAMA_ORIGINS)?",
+  bad_key: "The provider rejected the key. Check it in AI settings.",
+  no_credit: "The provider says the account has no credit left. Add credit, or pick a free model or provider.",
+  or_rate_limited: "The provider's rate limit was reached. Wait a bit, or try another model or provider.",
+  network: "Couldn't reach the AI provider. Check your connection.",
   upstream_error: "The AI service had a problem. Try again, or pick another free model."
 };
-const errText = e => (ERR[e && e.code] || "Couldn't reach the AI service. Check your connection and try again.") + (e && e.message && /^(bad_key|upstream_error|or_rate_limited)$/.test(e.code) ? " (" + e.message + ")" : "");
+const errText = e => (ERR[e && e.code] || "Couldn't reach the AI service. Check your connection and try again.") + (e && e.message && /^(bad_key|bad_model|no_credit|upstream_error|or_rate_limited)$/.test(e.code) ? " (" + e.message + ")" : "");
 
 function showErr(text, info){ const el = $("err"); el.hidden = !text; el.textContent = text || ""; el.className = "msg" + (info ? " info" : ""); }
 function overlay(on, text){
@@ -1446,7 +1591,7 @@ function judgeEdge(e){
 
 function ranAnalysis(code, r, meta){
   const m = meta || {}, cx = m.complexity || {};
-  const aiNote = IN_CLAUDE ? "" : AI.provider() ? "" : " Add a free OpenRouter key in AI settings to also get an explanation, complexity and AI-picked edge cases.";
+  const aiNote = IN_CLAUDE ? "" : AI.provider() ? "" : " Add an AI key in AI settings to also get an explanation, complexity and AI-picked edge cases.";
   return {
     title: m.title || (r.title && r.title !== "Your script" ? r.title : "Your Python code"), category: m.category || "", language: "Python",
     summary: m.summary || ("Traced by running your code in this browser with Python (Pyodide)." + (r.inputGuessed ? " No input was given, so AlgoScope picked one from the parameter names." : "") + aiNote),
@@ -1512,7 +1657,7 @@ async function analyze(){
   const code = $("editor").value.replace(/\s+$/, "");
   if (!code.trim()){ showErr("Paste some code first."); setMode("edit"); $("editor").focus(); return; }
   if (usePython(code)) return analyzePython(code);
-  if (!(await AI.ready())){ showErr(IN_CLAUDE ? "Claude isn't available here right now." : "Add a free OpenRouter key in AI settings to trace your own code. The 159 sheet problems work without one.", true); if (!IN_CLAUDE) openAI(); return; }
+  if (!(await AI.ready())){ showErr(IN_CLAUDE ? "Claude isn't available here right now." : "Add an AI key in AI settings to trace this language. Python runs without one, and so do the 159 sheet problems.", true); if (!IN_CLAUDE) openAI(); return; }
   showErr(""); stopPlay();
   S.ctl = new AbortController();
   $("runBtn").disabled = true; $("stopBtn").hidden = false;
@@ -1543,7 +1688,7 @@ $("stopBtn").onclick = () => S.ctl && S.ctl.abort();
 async function ask(){
   const q = $("askBox").value.trim(); if (!q) return;
   const out = $("answer");
-  if (!(await AI.ready())){ out.innerHTML = `<p class="hint">${IN_CLAUDE ? "Claude isn't available here right now." : "Add a free OpenRouter key in AI settings to ask questions."}</p>`; return; }
+  if (!(await AI.ready())){ out.innerHTML = `<p class="hint">${IN_CLAUDE ? "Claude isn't available here right now." : "Add an AI key in AI settings to ask questions."}</p>`; return; }
   const a = S.analysis; const stp = a ? a.steps[S.step] : null;
   const prompt = `You are a friendly algorithms tutor. Answer the learner's question about their code clearly and concisely (under 200 words unless code is needed). Use short paragraphs or bullets, backticks for inline code, and fenced blocks for code.
 

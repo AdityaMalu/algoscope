@@ -11,6 +11,12 @@ import make_pages
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# Hosts of the AI providers in app.html's PROVIDERS (each accepts browser requests), plus local model servers.
+AI_HOSTS = ["https://openrouter.ai", "https://api.anthropic.com", "https://api.openai.com", "https://generativelanguage.googleapis.com",
+            "https://api.groq.com", "https://api.mistral.ai", "https://api.deepseek.com", "https://api.x.ai", "https://api.together.xyz",
+            "https://api.cerebras.ai", "https://api.fireworks.ai", "http://localhost:*", "http://127.0.0.1:*"]
+
+
 def csp(html):
     """A Content-Security-Policy allowing only this page's own inline script (by hash) and the hosts it needs.
 
@@ -23,7 +29,7 @@ def csp(html):
             f"script-src 'self' {hashes} https://cdnjs.cloudflare.com; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src https://fonts.gstatic.com; img-src 'self' data:; "
-            "connect-src 'self' https://openrouter.ai; worker-src 'self'; "
+            f"connect-src 'self' {' '.join(AI_HOSTS)}; worker-src 'self'; "
             "object-src 'none'; base-uri 'none'; form-action 'none'")
 
 

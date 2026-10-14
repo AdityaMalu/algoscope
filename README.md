@@ -10,50 +10,59 @@ Step-by-step, animated traces of 159 DSA interview problems, in **Java, Python a
 - Share a moment of a trace: links like `#two-sum/4` open a problem at step 4 (**Copy link to this step** under the step counter).
 - Every problem also has a plain page (`/problems/two-sum/`) with the summary, complexity, key idea, mistakes, edge cases and code, so search engines and link previews can see it.
 - **Paste your own Python** and it is actually run in your browser with [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly). Every line is recorded, arrays, maps, linked lists, trees and the call stack are drawn from the real values, and common edge cases (empty input, one element, duplicates, …) are run too. No key or account needed.
-- **Paste code in any other language** and get an AI-generated trace. That part needs a free OpenRouter key (see below). AI traces are checked before drawing and labelled *AI-generated*, because the model writes them without running the code. With a key, Python runs also get an AI overview and AI-picked edge cases, whose results come from running the code.
+- **Paste code in any other language** and get an AI-generated trace. That part needs an AI key: free ones from OpenRouter, Gemini, Groq, Cerebras or Mistral, or paid Claude, OpenAI, DeepSeek and more (see below). AI traces are checked before drawing and labelled *AI-generated*, because the model writes them without running the code. With a key, Python runs also get an AI overview and AI-picked edge cases, whose results come from running the code.
 
-## Use AI for your own code (free OpenRouter key)
+## Use AI for your own code (bring your own key)
 
-The site never ships with a key. Each person adds their own, and it stays in their browser.
+The site never ships with a key. Each person adds their own key for the provider they like, and it stays in their browser. Pasted **Python** doesn't need a key at all, because it runs for real in the browser.
 
-### 1. Get a free key (about a minute, no card)
+### Supported providers
 
-1. Go to [openrouter.ai](https://openrouter.ai/) and sign in with Google or GitHub.
-2. Open **[Settings → API Keys](https://openrouter.ai/settings/keys)** and press **Create key**. Name it something like `AlgoScope`.
-3. Copy the key. It starts with `sk-or-v1-` and is shown only once.
+| Provider | Cost | Get a key |
+|---|---|---|
+| **OpenRouter** | Free models (`:free`), about 20/min and 50/day | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
+| **Google Gemini** | Free tier with daily limits | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **Groq** | Free tier, very fast open models | [console.groq.com/keys](https://console.groq.com/keys) |
+| **Cerebras** | Free tier, very fast | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
+| **Mistral** | Free "Experiment" plan | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) |
+| **Anthropic (Claude)** | Paid; most accurate traces | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) |
+| **OpenAI** | Paid (API credits, separate from ChatGPT) | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| **DeepSeek** | Paid, very cheap | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) |
+| **xAI (Grok)** | Paid | [console.x.ai](https://console.x.ai) |
+| **Together AI** | Paid, some free models | [api.together.ai/settings/api-keys](https://api.together.ai/settings/api-keys) |
+| **Fireworks AI** | Paid, starter credits | [fireworks.ai/account/api-keys](https://fireworks.ai/account/api-keys) |
+| **Local model** (Ollama, LM Studio) | Free, runs on your computer | No key. Start Ollama with `OLLAMA_ORIGINS=https://adityamalu.github.io` |
 
-### 2. Put it in AlgoScope
+All of these accept requests straight from a browser, so your key goes from your browser to the provider and nowhere else.
 
-1. Open the [live site](https://adityamalu.github.io/algoscope/).
-2. Press **⚙ AI settings** in the top-right corner.
-3. Paste the key into **OpenRouter API key**.
-4. Pick a model from **Free model**. The list is loaded live from OpenRouter and only shows `:free` models, largest first.
-5. Press **Save**. The status in the corner changes to `OpenRouter · <model>`.
+### Set it up
 
-Now paste code in the editor and press **Visualize**, or type a question in **Ask about this code**.
+1. Open the [live site](https://adityamalu.github.io/algoscope/) and press **⚙ AI settings** in the top-right corner.
+2. Pick a **Provider**. The dialog shows that provider's steps for getting a key.
+3. Paste the key. The **Model** list then loads live from the provider. Pick one, or type any model id.
+4. Press **Save**. The status in the corner changes to `<provider> · <model>`.
+
+Now paste code in the editor and press **Visualize**, or type a question in **Ask about this code**. Each provider keeps its own key, so you can switch providers without pasting keys again.
+
+With Claude, AlgoScope uses `claude-opus-5-5` by default (also offered: `claude-sonnet-5-5`, `claude-haiku-5-5`). The trace-depth menu next to **Visualize** sets how hard Claude thinks (Quick trace = low effort, Standard = medium, Deep = high). If a safety check declines a request, the API retries it on a suitable fallback model in the same call.
 
 ### Where the key is stored
 
 - Only in your browser: for this tab only (`sessionStorage`), or on this device (`localStorage`) if you tick **Remember the key on this device**.
-- To limit damage if a key ever leaks, set a credit limit of $0 on it at OpenRouter; free models still work.
-- It is sent only to `https://openrouter.ai/api/v1/chat/completions`, straight from your browser.
+- It is sent only to the provider you picked, straight from your browser. The page's Content-Security-Policy blocks every other destination.
 - It is **never** written to this repository or sent anywhere else. Press **Remove key** in AI settings to delete it.
-- Don't paste your key into a GitHub issue, a commit or a shared screenshot. If that happens, delete the key on OpenRouter and create a new one.
+- Set a spending limit on the key in the provider's dashboard (OpenRouter: a limit of $0 still allows free models).
+- Don't paste your key into a GitHub issue, a commit or a shared screenshot. If that happens, delete the key at the provider and create a new one.
 
-### Free limits
+### How much it uses
 
-| Limit | Free OpenRouter models |
-|---|---|
-| Requests per minute | about 20 |
-| Requests per day | about 50 (about 1,000 once the account has ever bought $10 of credits) |
-
-One **Visualize** is one request (roughly 4,000–8,000 tokens). One **Ask** is one request (about 1,000 tokens). Limits are per account, so extra keys don't add capacity. Free models are less accurate than paid ones, so double-check a trace that looks surprising.
+One **Visualize** is one request (roughly 4,000–8,000 tokens). One **Ask** is one request (about 1,000 tokens). Free models are less accurate than paid ones, so double-check a trace that looks surprising; every AI trace is labelled *AI-generated*.
 
 ## How it's checked
 
 Every push runs [CI](.github/workflows/ci.yml): it rebuilds all traces from the Java sources, checks them, cross-checks the Python and C++ solutions against Java, runs the tracer and browser tests, and fails if the committed `data/` differs from a fresh build. Only a green run deploys to GitHub Pages.
 
-The page ships with a Content-Security-Policy (scripts only from itself, by hash, and cdnjs with an integrity hash; network calls only to openrouter.ai), so a script injected through an AI answer can't run or read your key.
+The page ships with a Content-Security-Policy (scripts only from itself, by hash, and cdnjs with an integrity hash; network calls only to the AI providers listed below), so a script injected through an AI answer can't run or read your key.
 
 To get the problem pages into Google, add the site in [Search Console](https://search.google.com/search-console) and submit `https://adityamalu.github.io/algoscope/sitemap.xml`.
 
