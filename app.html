@@ -723,9 +723,9 @@ const PROVIDERS = {
     keyUrl: "https://platform.openai.com/api-keys", free: "Paid: needs credits on platform.openai.com (separate from a ChatGPT subscription).",
     filter: id => /^(gpt-|o\d|chatgpt-)/.test(id) && !/audio|realtime|transcribe|tts|image|search|instruct|embedding/.test(id),
     steps: ["Sign in at platform.openai.com and add credits under Billing.", "Open API keys and press Create new secret key.", "Copy the key (starts with sk-)."]},
-  gemini: {name: "Google Gemini", kind: "gemini", base: "https://generativelanguage.googleapis.com/v1beta", keyPrefix: "AIza", placeholder: "AIza…",
+  gemini: {name: "Google Gemini", kind: "gemini", base: "https://generativelanguage.googleapis.com/v1beta", keyPrefix: ["AIza", "AQ."], placeholder: "AIza… or AQ.…",
     keyUrl: "https://aistudio.google.com/apikey", free: "Free tier with daily limits; no card needed.",
-    steps: ["Sign in at Google AI Studio with a Google account.", "Press Get API key → Create API key.", "Copy the key (starts with AIza)."]},
+    steps: ["Sign in at Google AI Studio with a Google account.", "Press Get API key → Create API key.", "Copy the key (starts with AIza or AQ.)."]},
   groq: {name: "Groq", kind: "openai", base: "https://api.groq.com/openai/v1", keyPrefix: "gsk_", placeholder: "gsk_…",
     keyUrl: "https://console.groq.com/keys", free: "Free tier with per-minute and daily limits; very fast open models.",
     steps: ["Sign in at console.groq.com.", "Open API Keys and press Create API Key.", "Copy the key (starts with gsk_)."]},
@@ -964,7 +964,13 @@ $("orShow").onclick = () => { const k = $("orKey"); k.type = k.type === "passwor
 $("aiSave").onclick = () => {
   const p = $("aiProvider").value, P = PROVIDERS[p];
   const key = $("orKey").value.trim(), model = ($("orModel").value || "").trim(), m = $("aiMsg"); m.hidden = false;
-  if (key && P.keyPrefix && !key.startsWith(P.keyPrefix)){ m.className = "msg"; m.textContent = `That doesn't look like a ${P.name} key. It should start with ${P.keyPrefix}.`; return; }
+  /* Key formats change over time, so an unexpected prefix is a warning: pressing Save again uses the key anyway. */
+  const prefixes = [].concat(P.keyPrefix || []);
+  if (key && prefixes.length && !prefixes.some(x => key.startsWith(x)) && $("aiSave").dataset.confirm !== key){
+    $("aiSave").dataset.confirm = key; m.className = "msg";
+    m.textContent = `That doesn't look like a ${P.name} key (they usually start with ${prefixes.join(" or ")}). Check you picked the right provider, or press Save again to use it anyway.`; return;
+  }
+  delete $("aiSave").dataset.confirm;
   if (!key && !P.keyOptional){ m.className = "msg"; m.textContent = "Paste a key first."; return; }
   if (!model){ m.className = "msg"; m.textContent = "Pick or type a model too."; return; }
   if (P.editableBase){

@@ -241,7 +241,19 @@ def test_provider_list(app):
     app.fill("#orKey", "sk-wrong")
     app.fill("#orModel", "claude-opus-5-5")
     app.click("#aiSave")
-    expect(app.locator("#aiMsg")).to_contain_text("should start with sk-ant-")
+    expect(app.locator("#aiMsg")).to_contain_text("usually start with sk-ant-")
+    app.click("#aiSave")  # a second Save uses the key anyway
+    expect(app.locator("#aiMsg")).to_contain_text("Using Anthropic")
+
+
+def test_gemini_accepts_both_key_formats(app):
+    app.click("#aiOpen")
+    app.select_option("#aiProvider", "gemini")
+    for key in ["AIzaTestKey", "AQ.TestKey"]:
+        app.fill("#orKey", key)
+        app.fill("#orModel", "gemini-flash-latest")
+        app.click("#aiSave")
+        expect(app.locator("#aiMsg")).to_contain_text("Using Google Gemini")
 
 
 def test_anthropic_request(page, site):

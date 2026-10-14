@@ -21,7 +21,7 @@ The site never ships with a key. Each person adds their own key for the provider
 | Provider | Cost | Get a key |
 |---|---|---|
 | **OpenRouter** | Free models (`:free`), about 20/min and 50/day | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
-| **Google Gemini** | Free tier with daily limits | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **Google Gemini** (keys start with `AIza` or `AQ.`) | Free tier with daily limits | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 | **Groq** | Free tier, very fast open models | [console.groq.com/keys](https://console.groq.com/keys) |
 | **Cerebras** | Free tier, very fast | [cloud.cerebras.ai](https://cloud.cerebras.ai) |
 | **Mistral** | Free "Experiment" plan | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) |

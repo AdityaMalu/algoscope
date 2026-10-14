@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Yo6wMe0VVwqPF5JheUWPNIH8A8kIOs1rYDLzhNOraE8=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.groq.com https://api.mistral.ai https://api.deepseek.com https://api.x.ai https://api.together.xyz https://api.cerebras.ai https://api.fireworks.ai http://localhost:* http://127.0.0.1:*; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-8Ikys8uUoDW3BNmMzk8Mk+ho02zgF1KnipWvVzSu5wQ=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.groq.com https://api.mistral.ai https://api.deepseek.com https://api.x.ai https://api.together.xyz https://api.cerebras.ai https://api.fireworks.ai http://localhost:* http://127.0.0.1:*; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++. Paste your own Python and watch it run.">
 <link rel="canonical" href="https://adityamalu.github.io/algoscope/">
@@ -741,9 +741,9 @@ const PROVIDERS = {
     keyUrl: "https://platform.openai.com/api-keys", free: "Paid: needs credits on platform.openai.com (separate from a ChatGPT subscription).",
     filter: id => /^(gpt-|o\d|chatgpt-)/.test(id) && !/audio|realtime|transcribe|tts|image|search|instruct|embedding/.test(id),
     steps: ["Sign in at platform.openai.com and add credits under Billing.", "Open API keys and press Create new secret key.", "Copy the key (starts with sk-)."]},
-  gemini: {name: "Google Gemini", kind: "gemini", base: "https://generativelanguage.googleapis.com/v1beta", keyPrefix: "AIza", placeholder: "AIza…",
+  gemini: {name: "Google Gemini", kind: "gemini", base: "https://generativelanguage.googleapis.com/v1beta", keyPrefix: ["AIza", "AQ."], placeholder: "AIza… or AQ.…",
     keyUrl: "https://aistudio.google.com/apikey", free: "Free tier with daily limits; no card needed.",
-    steps: ["Sign in at Google AI Studio with a Google account.", "Press Get API key → Create API key.", "Copy the key (starts with AIza)."]},
+    steps: ["Sign in at Google AI Studio with a Google account.", "Press Get API key → Create API key.", "Copy the key (starts with AIza or AQ.)."]},
   groq: {name: "Groq", kind: "openai", base: "https://api.groq.com/openai/v1", keyPrefix: "gsk_", placeholder: "gsk_…",
     keyUrl: "https://console.groq.com/keys", free: "Free tier with per-minute and daily limits; very fast open models.",
     steps: ["Sign in at console.groq.com.", "Open API Keys and press Create API Key.", "Copy the key (starts with gsk_)."]},
@@ -982,7 +982,13 @@ $("orShow").onclick = () => { const k = $("orKey"); k.type = k.type === "passwor
 $("aiSave").onclick = () => {
   const p = $("aiProvider").value, P = PROVIDERS[p];
   const key = $("orKey").value.trim(), model = ($("orModel").value || "").trim(), m = $("aiMsg"); m.hidden = false;
-  if (key && P.keyPrefix && !key.startsWith(P.keyPrefix)){ m.className = "msg"; m.textContent = `That doesn't look like a ${P.name} key. It should start with ${P.keyPrefix}.`; return; }
+  /* Key formats change over time, so an unexpected prefix is a warning: pressing Save again uses the key anyway. */
+  const prefixes = [].concat(P.keyPrefix || []);
+  if (key && prefixes.length && !prefixes.some(x => key.startsWith(x)) && $("aiSave").dataset.confirm !== key){
+    $("aiSave").dataset.confirm = key; m.className = "msg";
+    m.textContent = `That doesn't look like a ${P.name} key (they usually start with ${prefixes.join(" or ")}). Check you picked the right provider, or press Save again to use it anyway.`; return;
+  }
+  delete $("aiSave").dataset.confirm;
   if (!key && !P.keyOptional){ m.className = "msg"; m.textContent = "Paste a key first."; return; }
   if (!model){ m.className = "msg"; m.textContent = "Pick or type a model too."; return; }
   if (P.editableBase){
