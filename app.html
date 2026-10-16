@@ -1,34 +1,34 @@
 <meta charset="utf-8">
 <title>AlgoScope</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 /* Layout: overview band → code panel (edit/trace) beside a graph-paper stage → report (edge cases, ideas, ask) */
 :root{
-  --paper:#f5f7fb; --surface:#ffffff; --sunk:#eef1f7; --ink:#18213a; --ink-2:#4a5573; --ink-3:#7d87a3;
-  --line:#d9deea; --grid:#e3e8f2; --accent:#2747d9; --accent-ink:#ffffff; --accent-soft:#e3e8fd;
-  --m-active:#f2a516; --m-compare:#e8546b; --m-swap:#8a5cf0; --m-done:#16a38a; --m-found:#14a34a; --m-visit:#5aa0f2; --m-dim:#c9cfdd; --m-error:#d93a3a;
+  --paper:#eef2f5; --surface:#ffffff; --sunk:#f4f7f9; --ink:#15202b; --ink-2:#46535f; --ink-3:#7b8794;
+  --line:#d8e0e7; --grid:#e3e9ee; --accent:#0b6aa8; --accent-ink:#ffffff; --accent-soft:#dcecf7;
+  --m-active:#f2a516; --m-compare:#e8546b; --m-swap:#8a5cf0; --m-done:#16a38a; --m-found:#14a34a; --m-visit:#5aa0f2; --m-dim:#c8d1d9; --m-error:#d93a3a;
   --ok:#14805e; --ok-bg:#ddf3ea; --warn:#9a5b00; --warn-bg:#fdf0d5; --bad:#b4233a; --bad-bg:#fbe1e5;
-  --hl-kw:#8a2bd0; --hl-str:#1a7f43; --hl-num:#b4501a; --hl-com:#8b93a8; --hl-fn:#2747d9; --hl-type:#0f7c8c;
-  --f-display:"Familjen Grotesk","Segoe UI",system-ui,sans-serif;
+  --hl-kw:#8a2bd0; --hl-str:#1a7f43; --hl-num:#b4501a; --hl-com:#8794a0; --hl-fn:#0b6aa8; --hl-type:#0f7c8c;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --f-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
   --r:10px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#0f1424; --surface:#161d31; --sunk:#1c2440; --ink:#e6eaf5; --ink-2:#aeb7d0; --ink-3:#7a84a3;
-  --line:#2a3454; --grid:#1d2642; --accent:#7d96ff; --accent-ink:#0f1424; --accent-soft:#25305a;
-  --m-active:#f5b335; --m-compare:#f06b80; --m-swap:#a585ff; --m-done:#2cc4a6; --m-found:#33c46a; --m-visit:#6eb0ff; --m-dim:#39435f; --m-error:#ff6161;
+  --paper:#0f151b; --surface:#161e26; --sunk:#1b2530; --ink:#e3eaf0; --ink-2:#b3c0cb; --ink-3:#8797a6;
+  --line:#2a3642; --grid:#1c2630; --accent:#5cb3ef; --accent-ink:#0f151b; --accent-soft:#16334a;
+  --m-active:#f5b335; --m-compare:#f06b80; --m-swap:#a585ff; --m-done:#2cc4a6; --m-found:#33c46a; --m-visit:#6eb0ff; --m-dim:#38444f; --m-error:#ff6161;
   --ok:#5fd7a8; --ok-bg:#163a30; --warn:#f3c26b; --warn-bg:#3d3018; --bad:#ff8b9b; --bad-bg:#43202a;
-  --hl-kw:#c79bff; --hl-str:#7fd99b; --hl-num:#ffad73; --hl-com:#6c7694; --hl-fn:#8fa6ff; --hl-type:#5fd0de;
+  --hl-kw:#c79bff; --hl-str:#7fd99b; --hl-num:#ffad73; --hl-com:#6b7a88; --hl-fn:#7cc2f2; --hl-type:#5fd0de;
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#0f1424; --surface:#161d31; --sunk:#1c2440; --ink:#e6eaf5; --ink-2:#aeb7d0; --ink-3:#7a84a3;
-  --line:#2a3454; --grid:#1d2642; --accent:#7d96ff; --accent-ink:#0f1424; --accent-soft:#25305a;
-  --m-active:#f5b335; --m-compare:#f06b80; --m-swap:#a585ff; --m-done:#2cc4a6; --m-found:#33c46a; --m-visit:#6eb0ff; --m-dim:#39435f; --m-error:#ff6161;
+  --paper:#0f151b; --surface:#161e26; --sunk:#1b2530; --ink:#e3eaf0; --ink-2:#b3c0cb; --ink-3:#8797a6;
+  --line:#2a3642; --grid:#1c2630; --accent:#5cb3ef; --accent-ink:#0f151b; --accent-soft:#16334a;
+  --m-active:#f5b335; --m-compare:#f06b80; --m-swap:#a585ff; --m-done:#2cc4a6; --m-found:#33c46a; --m-visit:#6eb0ff; --m-dim:#38444f; --m-error:#ff6161;
   --ok:#5fd7a8; --ok-bg:#163a30; --warn:#f3c26b; --warn-bg:#3d3018; --bad:#ff8b9b; --bad-bg:#43202a;
-  --hl-kw:#c79bff; --hl-str:#7fd99b; --hl-num:#ffad73; --hl-com:#6c7694; --hl-fn:#8fa6ff; --hl-type:#5fd0de;
+  --hl-kw:#c79bff; --hl-str:#7fd99b; --hl-num:#ffad73; --hl-com:#6b7a88; --hl-fn:#7cc2f2; --hl-type:#5fd0de;
   color-scheme:dark}
 
 *{box-sizing:border-box}

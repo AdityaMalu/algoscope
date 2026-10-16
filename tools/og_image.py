@@ -14,17 +14,17 @@ cells = "".join(
     f'<div class="c"><div class="b{" on" if p == "mid" else " in" if p else ""}">{v}</div><div class="p">{p}</div></div>' for v, p in CELLS)
 
 HTML = f"""<!doctype html><html><head><meta charset="utf-8">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-body{{margin:0;width:1200px;height:630px;background:#0f1424;color:#e6eaf5;font-family:"IBM Plex Sans",sans-serif;display:flex;flex-direction:column;justify-content:center;padding:0 90px;box-sizing:border-box;
-background-image:linear-gradient(#1d2642 1px,transparent 1px),linear-gradient(90deg,#1d2642 1px,transparent 1px);background-size:32px 32px}}
-h1{{font:700 92px "Familjen Grotesk",sans-serif;margin:0;letter-spacing:-1px}} h1 span{{color:#7d96ff}}
-p{{font-size:34px;margin:14px 0 44px;color:#aeb7d0;max-width:960px;line-height:1.3}}
+body{{margin:0;width:1200px;height:630px;background:#0f151b;color:#e3eaf0;font-family:"IBM Plex Sans",sans-serif;display:flex;flex-direction:column;justify-content:center;padding:0 90px;box-sizing:border-box;
+background-image:linear-gradient(#1c2630 1px,transparent 1px),linear-gradient(90deg,#1c2630 1px,transparent 1px);background-size:32px 32px}}
+h1{{font:700 92px "Bricolage Grotesque",sans-serif;margin:0;letter-spacing:-1px}} h1 span{{color:#5cb3ef}}
+p{{font-size:34px;margin:14px 0 44px;color:#b3c0cb;max-width:960px;line-height:1.3}}
 .row{{display:flex;gap:14px}} .c{{display:flex;flex-direction:column;align-items:center;gap:8px}}
-.b{{width:86px;height:86px;border-radius:14px;background:#161d31;border:3px solid #2a3454;display:flex;align-items:center;justify-content:center;font:700 34px "JetBrains Mono",monospace}}
-.b.in{{border-color:#7d96ff}} .b.on{{background:#f5b335;border-color:#f5b335;color:#0f1424}}
+.b{{width:86px;height:86px;border-radius:14px;background:#161e26;border:3px solid #2a3642;display:flex;align-items:center;justify-content:center;font:700 34px "JetBrains Mono",monospace}}
+.b.in{{border-color:#5cb3ef}} .b.on{{background:#f5b335;border-color:#f5b335;color:#0f151b}}
 .p{{height:30px;font:600 24px "JetBrains Mono",monospace;color:#f5b335}}
-.foot{{margin-top:34px;font-size:26px;color:#7a84a3}}
+.foot{{margin-top:34px;font-size:26px;color:#8797a6}}
 </style></head><body>
 <h1>Algo<span>Scope</span></h1>
 <p>Watch DSA algorithms run, line by line. 159 interview problems in Java, Python and C++.</p>

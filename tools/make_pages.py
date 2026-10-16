@@ -12,16 +12,16 @@ SITE = "https://adityamalu.github.io/algoscope/"
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 CSS = """
-:root{--paper:#f5f7fb;--surface:#fff;--sunk:#eef1f7;--ink:#18213a;--ink-2:#4a5573;--ink-3:#7d87a3;--line:#d9deea;--accent:#2747d9;--accent-ink:#fff;--ok:#14805e;--ok-bg:#ddf3ea;--warn:#9a5b00;--warn-bg:#fdf0d5;--bad:#b4233a;--bad-bg:#fbe1e5}
-@media (prefers-color-scheme:dark){:root{--paper:#0f1424;--surface:#161d31;--sunk:#1c2440;--ink:#e6eaf5;--ink-2:#aeb7d0;--ink-3:#7a84a3;--line:#2a3454;--accent:#7d96ff;--accent-ink:#0f1424;--ok:#5fd7a8;--ok-bg:#163a30;--warn:#f3c26b;--warn-bg:#3d3018;--bad:#ff8b9b;--bad-bg:#43202a;color-scheme:dark}}
+:root{--paper:#eef2f5;--surface:#fff;--sunk:#f4f7f9;--ink:#15202b;--ink-2:#46535f;--ink-3:#7b8794;--line:#d8e0e7;--accent:#0b6aa8;--accent-ink:#fff;--ok:#14805e;--ok-bg:#ddf3ea;--warn:#9a5b00;--warn-bg:#fdf0d5;--bad:#b4233a;--bad-bg:#fbe1e5}
+@media (prefers-color-scheme:dark){:root{--paper:#0f151b;--surface:#161e26;--sunk:#1b2530;--ink:#e3eaf0;--ink-2:#b3c0cb;--ink-3:#8797a6;--line:#2a3642;--accent:#5cb3ef;--accent-ink:#0f151b;--ok:#5fd7a8;--ok-bg:#163a30;--warn:#f3c26b;--warn-bg:#3d3018;--bad:#ff8b9b;--bad-bg:#43202a;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 "IBM Plex Sans","Segoe UI",system-ui,sans-serif}
 main{max-width:860px;margin:0 auto;padding:20px 16px 64px}
 a{color:var(--accent)}
 nav.top{display:flex;gap:14px;align-items:center;font-size:14px;margin-bottom:18px}
-nav.top .brand{font:700 18px "Familjen Grotesk","Segoe UI",system-ui,sans-serif;color:var(--ink);text-decoration:none;margin-right:auto}
-h1{font:700 clamp(26px,5vw,36px)/1.15 "Familjen Grotesk","Segoe UI",system-ui,sans-serif;margin:0 0 8px}
-h2{font:700 20px "Familjen Grotesk","Segoe UI",system-ui,sans-serif;margin:28px 0 8px}
+nav.top .brand{font:700 18px "Bricolage Grotesque","Segoe UI",system-ui,sans-serif;color:var(--ink);text-decoration:none;margin-right:auto}
+h1{font:700 clamp(26px,5vw,36px)/1.15 "Bricolage Grotesque","Segoe UI",system-ui,sans-serif;margin:0 0 8px}
+h2{font:700 20px "Bricolage Grotesque","Segoe UI",system-ui,sans-serif;margin:28px 0 8px}
 .meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .pill{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:var(--sunk);color:var(--ink-2)}
 .easy{background:var(--ok-bg);color:var(--ok)} .medium{background:var(--warn-bg);color:var(--warn)} .hard{background:var(--bad-bg);color:var(--bad)}
@@ -44,7 +44,7 @@ ul.plist li{break-inside:avoid;padding:3px 0}
 """
 
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">\n'
-         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@700'
+         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700'
          '&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">')
 CSP = ("default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
        "img-src 'self'; base-uri 'none'; form-action 'none'")
