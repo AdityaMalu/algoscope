@@ -25,7 +25,7 @@ final class F {
         if (k instanceof Character c) return String.valueOf(c);
         if (k == null) return "null";
         if (k.getClass().isArray() || k instanceof Collection) return s(k);
-        return String.valueOf(k);
+        return String.valueOf(T.conv(k));   // node(5) for nodes, never an identity hash
     }
 
     static String s(Object o) {

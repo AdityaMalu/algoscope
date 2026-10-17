@@ -205,6 +205,8 @@ final class T {
         List<TreeNode> troots = new ArrayList<>(); Map<String, Object> tptr = new LinkedHashMap<>();
         for (Object r : roots) { if (r instanceof ListNode l) heads.add(l); else if (r instanceof TreeNode t) troots.add(t); }
         boolean anyList = !heads.isEmpty(), anyTree = !troots.isEmpty();
+        for (Object r : roots) prewalk(r);
+        for (Object o : v) prewalk(o);
         Set<String> names = new HashSet<>();
         Map<String, Object> objs = new LinkedHashMap<>();
         for (int i = 0; i < n.length; i++) {
@@ -256,7 +258,7 @@ final class T {
     }
 
     /** Names that are almost always positions: shown on every indexed array/string they fit, even when not used as an index. */
-    static final Set<String> POS = Set.of("l", "r", "left", "right", "lo", "hi", "low", "high", "mid", "start", "end", "begin", "slow", "fast", "i", "j", "p1", "p2", "ind", "idx", "pos");
+    static final List<String> POS = List.of("l", "r", "left", "right", "lo", "hi", "low", "high", "mid", "start", "end", "begin", "slow", "fast", "i", "j", "p1", "p2", "ind", "idx", "pos");
 
     static void point(S s, String name, int len, Spec sp, Map<String, Object> ints, Map<String, List<Object[]>> touched) {
         Set<String> names = new LinkedHashSet<>(sp.ptr.getOrDefault(name, List.of()));
@@ -479,14 +481,47 @@ final class T {
             || (c instanceof HashSet<?> && !(c instanceof LinkedHashSet<?>));
     }
     static final Comparator<String> NATURAL = Comparator.comparingInt(String::length).thenComparing(Comparator.naturalOrder());
+    /** Order identity-keyed items by their text, then (for equal text, e.g. two nodes with value 1) by tracer id. */
+    static int byKey(Object a, Object b) {
+        int c = NATURAL.compare(F.key(a), F.key(b));
+        if (c != 0 || a == null || b == null) return c;
+        String x = id(a), y = id(b);
+        return NATURAL.compare(x, y);
+    }
+
+    /** Give ids to every node reachable from o (lists, trees, node classes) in a fixed order, before any hash-ordered container is read. */
+    static void prewalk(Object o) {
+        Deque<Object> st = new ArrayDeque<>();
+        if (o != null) st.push(o);
+        Set<Object> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+        while (!st.isEmpty() && seen.size() < 2000) {
+            Object c = st.pop();
+            if (c == null || !seen.add(c)) continue;
+            List<Object> next = new ArrayList<>();
+            if (c instanceof TreeNode t) { id(t); next.add(t.left); next.add(t.right); }
+            else if (c instanceof ListNode l) { id(l); next.add(l.next); }
+            else {
+                Shape sh = shapeOf(c);
+                if (sh == null) continue;
+                id(c);
+                next.add(get(sh.next, c)); next.add(get(sh.left, c)); next.add(get(sh.right, c));
+                Object k = get(sh.kids, c);
+                if (k instanceof Object[] arr) next.addAll(Arrays.asList(arr));
+                else if (k instanceof List<?> l) next.addAll(l);
+                if (get(sh.nbrs, c) instanceof List<?> l) next.addAll(l);
+            }
+            for (int i = next.size() - 1; i >= 0; i--) if (next.get(i) != null) st.push(next.get(i));
+        }
+    }
+
     static List<Map.Entry<?, ?>> entries(Map<?, ?> m) {
         List<Map.Entry<?, ?>> l = new ArrayList<>(m.entrySet());
-        if (unordered(m) && identityKeyed(m.keySet())) l.sort((a, b) -> NATURAL.compare(F.key(a.getKey()), F.key(b.getKey())));
+        if (unordered(m) && identityKeyed(m.keySet())) l.sort((a, b) -> byKey(a.getKey(), b.getKey()));
         return l;
     }
     static List<Object> items(Collection<?> c) {
         List<Object> l = new ArrayList<>(c);
-        if (unordered(c) && identityKeyed(c)) l.sort((a, b) -> NATURAL.compare(F.key(a), F.key(b)));
+        if (unordered(c) && identityKeyed(c)) l.sort(T::byKey);
         return l;
     }
 
