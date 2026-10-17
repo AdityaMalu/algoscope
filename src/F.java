@@ -50,7 +50,7 @@ final class F {
             return j.toString();
         }
         if (o instanceof TreeNode t) return tree(t);
-        return String.valueOf(o);
+        return String.valueOf(T.conv(o));   // node(…) or simple fields, never an identity hash
     }
 
     static String tree(TreeNode root) {

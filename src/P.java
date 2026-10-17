@@ -34,6 +34,7 @@ final class P {
         cur.put("output", out);
         cur.put("steps", steps);
         cur.put("capped", capped);
+        if (T.DEEP) cur.put("calls", calls());
         if (steps.isEmpty()) warnings.add(cur.get("title") + ": main trace has no steps");
     }
 
@@ -54,11 +55,13 @@ final class P {
         e.put("why", why);
         e.put("steps", steps);
         e.put("capped", capped);
+        if (T.DEEP) e.put("calls", calls());
         if (!match) warnings.add(cur.get("title") + " / " + name + ": expected " + expected + " but got " + out);
         ((List<Object>) cur.get("edgeCases")).add(e);
     }
 
-    static final int KEEP_HEAD = 44, KEEP_TAIL = 8;
+    /** Deep traces are trimmed again in build.py after hand-written steps are merged in. */
+    static final int KEEP_HEAD = T.DEEP ? 900 : 44, KEEP_TAIL = T.DEEP ? 100 : 8;
     static boolean capped;
 
     /** Long runs keep their beginning and end, with one marker step in between. */
@@ -74,6 +77,13 @@ final class P {
         out.add(marker);
         out.addAll(steps.subList(steps.size() - KEEP_TAIL, steps.size()));
         return out;
+    }
+
+    /** Recursion-tree nodes of the last run: [parent, label, label with names, result]. */
+    static List<Object> calls() {
+        List<Object> l = new ArrayList<>();
+        for (Object[] n : T.nodes) l.add(Arrays.asList(n));
+        return l;
     }
 
     private static String norm(String s) { return s.replaceAll("\\s+", ""); }

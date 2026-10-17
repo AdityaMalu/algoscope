@@ -192,6 +192,7 @@ class Backtrack {
         for (int i = start; i < c.length; i++) {
             if (c[i] > remain) {
                 T.n("Prune", c[i] + " > remaining " + remain + ", and every later candidate is bigger.", T.arr("candidates", c).p("i", i).m(i, "dim"), T.arr("path", path), T.v("remain", remain));
+                T.prune(c[i] + " > " + remain);
                 break;
             }
             path.add(c[i]);
@@ -219,6 +220,7 @@ class Backtrack {
         for (int i = start; i < nums.length; i++) {
             if (i > start && nums[i] == nums[i - 1]) {
                 T.n("Skip duplicate " + nums[i], "The same value was already tried at this level; it would repeat subsets.", T.arr("nums", nums).p("i", i).m(i, "dim").m(i - 1, "compare"), T.arr("path", path));
+                T.prune("skip " + nums[i]);
                 continue;
             }
             path.add(nums[i]);
@@ -244,8 +246,8 @@ class Backtrack {
             return;
         }
         for (int i = start; i < c.length; i++) {
-            if (i > start && c[i] == c[i - 1]) continue;
-            if (c[i] > remain) break;
+            if (i > start && c[i] == c[i - 1]) continue; //@prune "skip " + c[i]
+            if (c[i] > remain) break; //@prune c[i] + " > " + remain
             path.add(c[i]);
             T.call("pick " + c[i]);
             T.s("Pick " + c[i], "Remaining: " + (remain - c[i]) + ". Next picks start after index " + i + ".", T.arr("candidates", c).p("i", i).range(0, start - 1, "dim").m(i, "active"), T.arr("path", path).m(path.size() - 1, "swap"), T.v("remain", remain - c[i]));
@@ -305,6 +307,7 @@ class Backtrack {
         for (int i = start; i < s.length(); i++) {
             if (!isPal(s, start, i)) {
                 T.n("Not a palindrome", "\"" + s.substring(start, i + 1) + "\" doesn't read the same backwards.", T.str("s", s).range(0, start - 1, "done").range(start, i, "dim"), T.arr("path", path));
+                T.prune("\"" + s.substring(start, i + 1) + "\" ✗");
                 continue;
             }
             path.add(s.substring(start, i + 1));
@@ -358,7 +361,7 @@ class Backtrack {
             return;
         }
         for (int c = 0; c < n; c++) {
-            if (cols.contains(c) || diag.contains(r - c) || anti.contains(r + c)) continue;
+            if (cols.contains(c) || diag.contains(r - c) || anti.contains(r + c)) continue; //@prune "col " + c
             queens[r] = c;
             cols.add(c);
             diag.add(r - c);

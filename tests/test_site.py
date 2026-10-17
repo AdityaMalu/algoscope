@@ -32,6 +32,21 @@ def test_open_problem_and_step(app):
     expect(app.locator("#stepCount")).to_have_text(f"Step {total} of {total}")
 
 
+def test_deep_trace_has_every_line_and_recursion_tree(app):
+    """Subsets II: every executed line is a step, and the recursion tree shows running, finished and pruned calls."""
+    app.goto(app.url.split("#")[0] + "#subsets-ii")
+    expect(app.locator("#stepCount")).to_have_text(re.compile(r"Step 1 of \d+"))
+    total = int(app.locator("#stepCount").inner_text().split()[-1])
+    assert total >= 40
+    for _ in range(28):
+        app.click("#bNext")
+    expect(app.locator("#stepTitle")).to_have_text("Skip duplicate 2")
+    expect(app.locator("#stage .ct-n.top")).to_have_count(1)
+    expect(app.locator("#stage .ct-n.pruned")).to_have_count(1)
+    expect(app.locator("#stage .ct-n.done").first).to_be_visible()
+    expect(app.locator(".stepexplain .detail")).to_contain_text("continue")
+
+
 def test_back_to_home(app):
     app.goto(app.url.split("#")[0] + "#valid-anagram")
     expect(app.locator("#stepCount")).to_have_text(re.compile(r"Step 1 of"))

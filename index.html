@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-freaeutazjBPhf7D+R0UDdkcj1jDWRG7gjUhguhfIRk=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.groq.com https://api.mistral.ai https://api.deepseek.com https://api.x.ai https://api.together.xyz https://api.cerebras.ai https://api.fireworks.ai http://localhost:* http://127.0.0.1:*; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-g2nhkuP8xR+QYjhKu2Tv5qVf4BzMxnnWkQVLGfp+BTY=' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://openrouter.ai https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://api.groq.com https://api.mistral.ai https://api.deepseek.com https://api.x.ai https://api.together.xyz https://api.cerebras.ai https://api.fireworks.ai http://localhost:* http://127.0.0.1:*; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++. Paste your own Python and watch it run.">
 <link rel="canonical" href="https://adityamalu.github.io/algoscope/">
@@ -205,6 +205,15 @@ svg.viz text{font-family:var(--f-mono)}
 .n-c{fill:var(--surface);stroke:var(--line);stroke-width:1.8;transition:fill .25s,stroke .25s}
 .n-t{fill:var(--ink);font-size:13px;font-weight:500}
 .e-l{stroke:var(--ink-3);stroke-width:1.5;fill:none}
+.ct-n rect{fill:var(--surface);stroke:var(--line);stroke-width:1.4;transition:fill .25s,stroke .25s}
+.ct-n text{fill:var(--ink);font:11px var(--f-mono)}
+.ct-n.done rect{fill:color-mix(in srgb,var(--m-done) 16%,var(--surface));stroke:var(--m-done)}
+.ct-n.open rect{fill:color-mix(in srgb,var(--m-active) 12%,var(--surface));stroke:var(--m-active)}
+.ct-n.top rect{fill:color-mix(in srgb,var(--m-active) 34%,var(--surface));stroke:var(--m-active);stroke-width:2.4}
+.ct-n.pruned rect{fill:color-mix(in srgb,var(--m-compare) 12%,var(--surface));stroke:var(--m-compare);stroke-dasharray:4 3}
+.ct-n.ghost,.ct-e.ghost{opacity:.16}
+.ct-e{stroke:var(--ink-3);stroke-width:1.2;fill:none} .ct-e.open{stroke:var(--m-active);stroke-width:2} .ct-e.pruned{stroke:var(--m-compare);stroke-dasharray:4 3}
+.stepexplain .detail{display:block;margin-top:6px;font-size:12.5px;color:var(--ink-3)}
 .e-w{fill:var(--ink-2);font-size:11px}
 .p-t{fill:var(--accent);font-size:11px;font-weight:700}
 .sv-active .n-c{fill:color-mix(in srgb,var(--m-active) 35%,var(--surface));stroke:var(--m-active)}
@@ -722,7 +731,8 @@ function libView(){
   const steps = e ? e.steps : b.steps;
   return {...b, language: alt ? L : "Java", code: alt ? alt.code : b.code,
     steps: alt ? steps.map(st => ({...st, line: alt.lines[st.line] || 0})) : steps,
-    input: e ? e.input : b.input, output: e ? e.actual : b.output, capped: e ? !!e.capped : b.capped};
+    input: e ? e.input : b.input, output: e ? e.actual : b.output, capped: e ? !!e.capped : b.capped,
+    calls: (e ? e.calls : b.calls) || []};
 }
 /* ---------- AI access: Claude inside claude.ai, otherwise the viewer's own key for one of several providers ---------- */
 const IN_CLAUDE = !!(window.claude && typeof window.claude.use === "function");
@@ -1114,7 +1124,7 @@ function normMarks(m){
   if (Array.isArray(m)){ const o={}; m.forEach(x => { if (x && typeof x === "object"){ const k = x.index ?? x.id ?? x.key ?? x.cell; if (k!=null) o[String(k)] = x.mark || x.state || "active"; } else if (x!=null) o[String(x)] = "active"; }); return o; }
   return m;
 }
-const KINDS = new Set(["array","string","text","list","matrix","grid","table","dp","linkedlist","linked_list","tree","bst","trie","heap","graph","stack","callstack","call_stack","queue","deque","map","hashmap","dict","set","hashset","object"]);
+const KINDS = new Set(["array","string","text","list","matrix","grid","table","dp","linkedlist","linked_list","tree","bst","trie","heap","graph","stack","callstack","call_stack","queue","deque","map","hashmap","dict","set","hashset","object","calltree"]);
 /* AI output is checked before it is drawn: steps that point outside the code lose their line highlight,
    and malformed structures are dropped. The counts are shown next to the "AI-generated" badge. */
 function checkSteps(rawSteps, code){
@@ -1277,6 +1287,56 @@ function rTree(d){
   for (const id in L.pos){ const n = L.map[id], p = P(id); circles += svgNode(p.x, p.y, n.value ?? n.val ?? n.label ?? id, marks[id], by[id], r); }
   return `<div class="scrollx"><svg class="viz" width="${W + 40}" height="${H}" viewBox="0 0 ${W + 40} ${H}">${edges}${circles}</svg></div>${extra}`;
 }
+/* Recursion tree: every call of the run is laid out once, so the tree doesn't jump while it grows.
+   Calls that haven't happened yet are drawn faintly. */
+const ctCache = new WeakMap();
+function ctText(c, withResult){
+  if (!withResult || c[2] == null || c[2] === "✕") return c[1];
+  const r = String(c[2]); return c[1] + " → " + (r.length > 18 ? r.slice(0, 17) + "…" : r);
+}
+const ctWidth = t => Math.max(28, t.length * 6.7 + 14);
+function ctLayout(calls, n){
+  const hit = ctCache.get(calls); if (hit && hit.n === n) return hit;
+  const kids = Array.from({length: n}, () => []), roots = [];
+  for (let i = 0; i < n; i++){ const p = calls[i][0]; if (p >= 0 && p < n) kids[p].push(i); else roots.push(i); }
+  const w = i => ctWidth(ctText(calls[i], true)), gap = 12, gy = 50;
+  const pos = {}; let x = 8, maxD = 0;
+  function walk(i, d, minW){
+    maxD = Math.max(maxD, d);
+    if (!kids[i].length){ const ww = Math.max(w(i), minW); pos[i] = {x: x + ww / 2, d}; x += ww + gap; return; }
+    kids[i].forEach(c => walk(c, d + 1, kids[i].length === 1 ? Math.max(minW, w(i)) : 0));
+    pos[i] = {x: (pos[kids[i][0]].x + pos[kids[i][kids[i].length - 1]].x) / 2, d};
+  }
+  roots.forEach(r => walk(r, 0, 0));
+  const L = {n, pos, w, gy, W: x + 8, H: (maxD + 1) * gy + 16};
+  ctCache.set(calls, L); return L;
+}
+function rCallTree(d){
+  const calls = (S.analysis && S.analysis.calls) || [];
+  const up = Math.min(Number(d.up ?? calls.length), calls.length);
+  if (!up) return `<div class="empty">no calls yet</div>`;
+  const n = calls.length <= 220 ? calls.length : up;
+  const L = ctLayout(calls, n), path = (d.path || []).map(Number), on = new Set(path), top = path[path.length - 1];
+  const Y = i => 20 + L.pos[i].d * L.gy;
+  let es = "", ns = "";
+  for (let i = 0; i < n; i++){
+    const p = calls[i][0], ghost = i >= up, pruned = calls[i][2] === "✕";
+    const st = ghost ? "ghost" : pruned ? "pruned" : i === top ? "top" : on.has(i) ? "open" : "done";
+    if (p >= 0 && p < n) es += `<line class="ct-e${ghost ? " ghost" : pruned ? " pruned" : on.has(i) ? " open" : ""}" x1="${L.pos[p].x}" y1="${Y(p) + 11}" x2="${L.pos[i].x}" y2="${Y(i) - 11}"/>`;
+    const t = ctText(calls[i], st === "done"), ww = ctWidth(t);
+    ns += `<g class="ct-n ${st}"${i === top ? ' data-top="1"' : ""}><rect x="${L.pos[i].x - ww / 2}" y="${Y(i) - 11}" width="${ww}" height="22" rx="6"/><text x="${L.pos[i].x}" y="${Y(i) + 4}" text-anchor="middle">${esc(t)}</text></g>`;
+  }
+  return `<div class="scrollx ct-wrap"><svg class="viz" width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}">${es}${ns}</svg></div>
+    <div class="hint" style="margin-top:4px">Amber: calls still running (the call stack). Green: finished, with what they returned.${calls.some(c => c[2] === "✕") ? " Red dashed: branches the code skips." : ""}</div>`;
+}
+/* Keep the running call in view when the recursion tree is wider than the panel. */
+function centerCallTree(){
+  document.querySelectorAll("#stage .ct-wrap").forEach(w => {
+    const g = w.querySelector('[data-top="1"] rect'); if (!g) return;
+    const x = Number(g.getAttribute("x")) + Number(g.getAttribute("width")) / 2;
+    if (x < w.scrollLeft + 40 || x > w.scrollLeft + w.clientWidth - 40) w.scrollLeft = Math.max(0, x - w.clientWidth / 2);
+  });
+}
 const layoutCache = new Map();
 function graphLayout(nodes, edges, W, H){
   const key = nodes.map(n => n.id).join("|") + "#" + edges.map(e => e.from + ">" + e.to).join("|");
@@ -1334,6 +1394,7 @@ function renderStructure(d){
     case "linkedlist": case "linked_list": body = rList(d); break;
     case "tree": case "bst": case "trie": case "heap": body = rTree(d); break;
     case "graph": body = rGraph(d); break;
+    case "calltree": body = rCallTree(d); label = "calls"; break;
     case "stack": case "callstack": case "call_stack": body = rStack(d, false); break;
     case "queue": case "deque": body = rStack(d, true); break;
     case "map": case "hashmap": case "dict": case "set": case "hashset": case "object": body = rMap(d); break;
@@ -1352,10 +1413,11 @@ function renderStep(){
   $("bLink").hidden = !(S.base && !S.edge && LIB.cur);
   $("stepLine").textContent = st.line ? `line ${st.line}` : "line –";
   $("stepTitle").textContent = st.title || "Step " + (S.step + 1);
-  $("stepExplain").innerHTML = inline(st.explain);
+  $("stepExplain").innerHTML = inline(st.explain) + (st.detail ? `<span class="detail">${inline(st.detail)}</span>` : "");
   const ov = $("stage").querySelector(".overlay");
   $("stage").innerHTML = st.structures.length ? st.structures.map(renderStructure).join("") : `<div class="empty">No data structures at this step. See the variables below.</div>`;
   if (ov) $("stage").appendChild(ov);
+  centerCallTree();
   const pv = prev ? prev.vars : {};
   $("vars").innerHTML = Object.keys(st.vars).length ? Object.entries(st.vars).map(([k, v]) => {
     const changed = prev && JSON.stringify(pv[k]) !== JSON.stringify(v);
@@ -1778,6 +1840,23 @@ exSel.onchange = () => {
 };
 
 /* ---------- problem library (pre-computed traces, no Claude usage) ---------- */
+/* The data files store a structure (or the variables) only when it changed; {"$": name} means "same as the previous step". */
+function expandSteps(steps){
+  let prev = {}, vars = {};
+  return (steps || []).map(s => {
+    const cur = {};
+    const structures = (s.structures || []).map(d => (d && d.$ != null) ? prev[d.$] : d).filter(Boolean);
+    structures.forEach(d => { cur[d.name] = d; });
+    if (s.vars) vars = s.vars;
+    prev = cur;
+    return {...s, vars, structures};
+  });
+}
+function expandProblem(p){
+  p.steps = expandSteps(p.steps);
+  (p.edgeCases || []).forEach(e => { e.steps = expandSteps(e.steps); });
+  return p;
+}
 function libItems(){ return (LIB.index || []).filter(x => x.file); }
 async function loadIndex(){
   try { const r = await fetch("data/index.json"); if (!r.ok) return false; LIB.index = await r.json(); }
@@ -1789,7 +1868,7 @@ async function loadIndex(){
 async function openProblem(id){
   const e = (LIB.index || []).find(x => x.id === id && x.file); if (!e) return false;
   try {
-    if (!LIB.files[e.file]){ const r = await fetch("data/" + e.file); if (!r.ok) throw 0; LIB.files[e.file] = await r.json(); }
+    if (!LIB.files[e.file]){ const r = await fetch("data/" + e.file); if (!r.ok) throw 0; LIB.files[e.file] = (await r.json()).map(expandProblem); }
   } catch { showErr("Couldn't load that problem's trace. Check your connection and try again."); return false; }
   const p = LIB.files[e.file].find(x => x.id === id); if (!p) return false;
   stopPlay(); showErr("");

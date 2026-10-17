@@ -5,7 +5,7 @@ Step-by-step, animated traces of 159 DSA interview problems, in **Java, Python a
 **Live site:** https://adityamalu.github.io/algoscope/ · [all problems as plain pages](https://adityamalu.github.io/algoscope/problems/)
 
 - The 159 problems (an Amazon prep sheet: arrays, two pointers, sliding window, binary search, stacks, linked lists, trees, heaps, graphs, backtracking, DP, greedy, tries, design) are **pre-computed**. They need no account, no API key and no AI.
-- Traces come from **actually running** the Java solutions with a small tracer, so every step is real program state, not a guess.
+- Traces come from **actually running** the Java solutions, so every step is real program state, not a guess. Every executed line is a step: each loop check and `if` with its result, each call and return (with a recursion tree for recursive code, including the branches it prunes), and the array cells, pointers, nodes and map entries the line reads or writes.
 - The Python and C++ solutions were run on the same inputs and checked against Java: 693 of 693 test cases match in each language.
 - Share a moment of a trace: links like `#two-sum/4` open a problem at step 4 (**Copy link to this step** under the step counter).
 - Every problem also has a plain page (`/problems/two-sum/`) with the summary, complexity, key idea, mistakes, edge cases and code, so search engines and link previews can see it.
@@ -82,7 +82,7 @@ Requirements: Java 21+, Python 3.10+, and g++ (C++17) for the cross-language che
 
 | Command | What it does |
 |---|---|
-| `python build.py` | Compiles and runs every Java solution with the tracer and writes `data/*.json` |
+| `python build.py` | Instruments every Java solution (`tools/Instr.java`), runs it, and writes `data/*.json` |
 | `python build.py Hashing` | Rebuilds one topic (class names are in `src/Main.java`) |
 | `python tools/verify.py` | Runs the Python and C++ solutions on the same inputs and compares them with Java |
 | `python tools/listing.py arrays-hashing` | Prints a topic's Java code with the lines that trace steps point at |
@@ -101,7 +101,7 @@ data/               pre-computed traces, one JSON file per topic, plus index.jso
 src/                Java solutions + tracer (T.java), registry (P.java), formatting (F.java)
 alt/py, alt/cpp     Python and C++ solutions; "# @12" / "// @12" tags map a line to Java line 12
 alt/spec.py         how to call each solution when cross-checking
-build.py            runs the Java tracer and writes data/
+build.py            instruments and runs the Java solutions, then writes data/ (step text and trimming: tools/deepen.py)
 runner/             pytrace.py (records real Python runs) and py-worker.js (runs it with Pyodide in a Web Worker)
 tests/              pytest: tracer tests and Playwright browser tests
 tools/              verify.py, check_data.py, diff_data.py, listing.py, make_site.py, make_pages.py, og_image.py
@@ -111,6 +111,14 @@ sheet.json          the problem list (names, levels, topics, links)
 ```
 
 Inside a Java solution, code between `//@code <name>` and `//@end` is what the page shows. Tracer calls (`T.s(...)`, `T.n(...)`) and lines ending in `// @hide` are stripped from the display.
+
+How a trace is made:
+
+1. `tools/Instr.java` reads each region with javac's syntax tree and inserts tracer calls inline (never adding a line break, so line numbers stay put): after each statement, around each `if`/loop condition, on each `return`, and at method entry and exit. Each call records the locals in scope and the array cells the line touches.
+2. The instrumented copy (in `build/isrc/`) runs with `-Dalgoscope.deep=true`. `src/T.java` turns each call into a step: arrays and strings with pointers, matrices, maps, sets, stacks, queues, heaps, `ListNode`/`TreeNode` structures, and custom node classes (linked lists, trees, tries, graphs) found by their fields.
+3. `tools/deepen.py` merges the hand-written `T.s`/`T.n` explanations into the step they describe, writes a short explanation for every other step (what changed, which way a condition went, what a call returned), adds the call stack and recursion tree, trims very long runs, and stores unchanged structures as references that the page expands.
+
+To mark a branch that backtracking rules out, put `T.prune("label");` on its own line before the `continue`/`break`, or add `//@prune "label"` at the end of a one-line `if (...) continue;`. It shows as a red dashed node in the recursion tree.
 
 ## Credits
 

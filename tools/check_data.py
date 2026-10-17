@@ -11,7 +11,7 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(root, "data")
 KINDS = {"array", "string", "text", "list", "matrix", "grid", "table", "dp", "linkedlist", "linked_list",
          "tree", "bst", "trie", "heap", "graph", "stack", "callstack", "call_stack", "queue", "deque",
-         "map", "hashmap", "dict", "set", "hashset", "object"}
+         "map", "hashmap", "dict", "set", "hashset", "object", "calltree"}
 FIELDS = {"id": str, "title": str, "level": str, "topic": str, "code": str, "summary": str,
           "complexity": dict, "intuition": list, "pitfalls": list, "steps": list, "edgeCases": list}
 errors = []
@@ -21,10 +21,25 @@ def err(where, msg):
     errors.append(f"{where}: {msg}")
 
 
-def check_steps(where, steps, nlines):
+def check_steps(where, steps, nlines, calls=None):
     if not steps:
         err(where, "no steps"); return
+    prev = {}
     for i, s in enumerate(steps):
+        cur = {}
+        if isinstance(s, dict):
+            full = []
+            for d in s.get("structures", []):
+                if isinstance(d, dict) and "$" in d:
+                    if d["$"] not in prev:
+                        err(f"{where} step {i + 1}", f"refers to {d['$']!r}, which the previous step doesn't have"); continue
+                    d = prev[d["$"]]
+                full.append(d)
+                if isinstance(d, dict): cur[d.get("name")] = d
+                if isinstance(d, dict) and d.get("kind") == "calltree" and not 0 <= d.get("up", -1) <= len(calls or []):
+                    err(f"{where} step {i + 1}", "recursion tree refers past the recorded calls")
+            s = dict(s, structures=full)
+        prev = cur
         w = f"{where} step {i + 1}"
         if not isinstance(s, dict):
             err(w, "not an object"); continue
@@ -61,12 +76,12 @@ def main():
         if not isinstance(p.get("code"), str):
             continue
         n = len(p["code"].split("\n"))
-        check_steps(e["id"], p.get("steps") or [], n)
+        check_steps(e["id"], p.get("steps") or [], n, p.get("calls"))
         if e.get("steps") != len(p.get("steps") or []):
             err(e["id"], "index step count is stale")
         for j, ec in enumerate(p.get("edgeCases") or []):
             if ec.get("steps"):
-                check_steps(f"{e['id']} edge {j + 1}", ec["steps"], n)
+                check_steps(f"{e['id']} edge {j + 1}", ec["steps"], n, ec.get("calls"))
         for lang, alt in (p.get("alt") or {}).items():
             m = len(alt["code"].split("\n"))
             for jl, al in alt["lines"].items():

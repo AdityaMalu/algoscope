@@ -6,6 +6,8 @@ import json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC, BUILD, DATA = (os.path.join(ROOT, d) for d in ("src", "build", "data"))
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import deepen  # noqa: E402
 
 
 def slug(s):
@@ -75,6 +77,7 @@ def region(file, marker):
     disp, mapping, codeflag = [], {}, {}
     for k, (n, l) in enumerate(out):
         t = l[ind:] if len(l) >= ind else l.lstrip()
+        t = re.sub(r"\s*//@prune .*$", "", t)
         t = re.sub(r"^(\s*)((?:public|private|protected)\s+)?static\s+(?!final)", r"\1\2", t)
         t = t.replace(" implements TN", "")
         disp.append(t.rstrip())
@@ -118,6 +121,56 @@ def alt_region(lang, marker):
     return None
 
 
+ALT_GAPS = {}
+
+# Line alignment between the Java solution and its Python/C++ translation, for lines without an @tag.
+SYN = {"append": "add", "push_back": "add", "emplace_back": "add", "push": "add", "offer": "add", "addlast": "add", "insert": "add",
+       "pop_back": "pop", "remove": "pop", "poll": "pop", "removelast": "pop", "pollfirst": "pop", "popleft": "pop", "pollLast": "pop",
+       "length": "len", "size": "len", "len": "len", "and": "&&", "or": "||", "not": "!", "elif": "if", "true": "true", "false": "false",
+       "none": "null", "nullptr": "null", "null": "null", "containskey": "in", "contains": "in", "count": "in", "get": "[]", "at": "[]",
+       "put": "[]=", "def": "fn", "void": "fn"}
+STOP = {"int", "long", "double", "boolean", "bool", "char", "string", "str", "list", "vector", "arraylist", "linkedlist", "new", "auto", "const",
+        "final", "static", "self", "this", "std", "var", "integer", "map", "hashmap", "unordered_map", "set", "hashset", "unordered_set",
+        "deque", "arraydeque", "range", "in", "of", "for_each", "end", "begin", "math", "collections", "arrays", "le", "ge"}
+
+
+def toks(line, lang):
+    line = re.sub(r"#.*$" if lang == "Python" else r"//.*$", "", line)
+    out = set()
+    for t in re.findall(r"[A-Za-z_]\w*|\d+|==|!=|<=|>=|&&|\|\||[<>+\-*/%]", line):
+        t = SYN.get(t.lower(), t.lower())
+        if t not in STOP: out.add(t)
+    return out
+
+
+def align(java, alt, tagged, lang):
+    """Best alt line for each Java line: most shared tokens, nudged toward where the tagged lines say it should be."""
+    jt = [toks(l, "Java") for l in java]
+    at = [toks(l, lang) for l in alt]
+    anchors = sorted(tagged.items())
+    out = {}
+    for j in range(1, len(java) + 1):
+        A = jt[j - 1]
+        if not A: continue
+        before = [(k, v) for k, v in anchors if k <= j]
+        after = [(k, v) for k, v in anchors if k > j]
+        if before and after:
+            (j0, a0), (j1, a1) = before[-1], after[0]
+            exp = a0 + (j - j0) * (a1 - a0) / max(1, j1 - j0)
+        elif before: exp = before[-1][1] + (j - before[-1][0])
+        elif after: exp = after[0][1] - (after[0][0] - j)
+        else: exp = j
+        best, score = None, 0.0
+        for a in range(1, len(alt) + 1):
+            B = at[a - 1]
+            if not B: continue
+            sim = len(A & B) / len(A | B)
+            sc = sim + 0.25 / (1 + abs(a - exp) / 3)
+            if sim >= 0.25 and sc > score: best, score = a, sc
+        if best: out[j] = best
+    return out
+
+
 def attach_alt(rec, warn):
     used = {s["line"] for s in rec["steps"]}
     for e in rec["edgeCases"]: used |= {s["line"] for s in e["steps"]}
@@ -127,11 +180,14 @@ def attach_alt(rec, warn):
         r = alt_region(lang, rec["marker"])
         if not r: continue
         lines = r["lines"]
+        guessed = align(rec["code"].split(chr(10)), r["code"].split(chr(10)), lines, lang)
         for jl in sorted(used):
             if jl not in lines:
-                lower = [k for k in lines if k < jl]
-                lines[jl] = lines[max(lower)] if lower else 1
-                warn.append(f"{rec['title']}: {lang} has no line tagged @{jl}")
+                if jl in guessed: lines[jl] = guessed[jl]
+                else:
+                    lower = [k for k in lines if k < jl]
+                    lines[jl] = lines[max(lower)] if lower else 1
+                    ALT_GAPS[lang] = ALT_GAPS.get(lang, 0) + 1
         out[lang] = {"code": r["code"], "lines": {str(k): v for k, v in sorted(lines.items()) if k in used}}
     if out: rec["alt"] = out
 
@@ -169,9 +225,19 @@ def fix_steps(steps, reg, file, warn, title):
     out = []
     for s in steps:
         line = map_line(reg, s["raw"], s["dir"]) if s["file"] == file else 0
-        if line == 0: warn.append(f"{title}: step '{s['title']}' has no line (raw {s['file']}:{s['raw']})")
-        out.append({"line": line, "title": s["title"], "explain": s["explain"], "vars": s["vars"], "structures": s["structures"]})
+        if line == 0 and s.get("hand"): warn.append(f"{title}: step '{s['title']}' has no line (raw {s['file']}:{s['raw']})")
+        t = {"line": line, "title": s["title"], "explain": s["explain"], "vars": s["vars"], "structures": s["structures"]}
+        for k in ("kind", "st", "up", "back", "cond", "ret", "hand", "dir"):
+            if k in s: t[k] = s[k]
+        out.append(t)
     return out
+
+
+def deep_steps(raw, calls, reg, file, warn, title, which):
+    """Mapped, narrated, trimmed steps of one run, plus its recursion-tree nodes."""
+    steps = fix_steps(raw, reg, file, warn, title)
+    steps = [s for s in steps if s["line"] or s.get("hand")]   # steps outside the shown code (driver calls)
+    return deepen.process(steps, calls, reg["code"].split(chr(10)), which)
 
 
 def natural(k):
@@ -192,12 +258,20 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     topics = sys.argv[1:]
     os.makedirs(BUILD, exist_ok=True); os.makedirs(DATA, exist_ok=True)
-    javas = [os.path.join(SRC, f) for f in os.listdir(SRC) if f.endswith(".java")]
+    # Instrument the solutions (tools/Instr.java) so every executed line records a step, then compile and run them.
+    tools, isrc = os.path.join(BUILD, "tools"), os.path.join(BUILD, "isrc")
+    r = subprocess.run(["javac", "-encoding", "UTF-8", "-nowarn", "-d", tools, os.path.join(ROOT, "tools", "Instr.java")], capture_output=True, text=True)
+    if r.returncode:
+        print(r.stdout, r.stderr); sys.exit(1)
+    r = subprocess.run(["java", "-cp", tools, "Instr", SRC, isrc], capture_output=True, text=True, encoding="utf-8")
+    if r.returncode:
+        print(r.stdout, r.stderr); sys.exit(1)
+    javas = [os.path.join(isrc, f) for f in sorted(os.listdir(isrc)) if f.endswith(".java")]
     r = subprocess.run(["javac", "-encoding", "UTF-8", "-nowarn", "-d", BUILD] + javas, capture_output=True, text=True)
     if r.returncode:
         print(r.stdout, r.stderr); sys.exit(1)
     out_json = os.path.join(BUILD, "out.json")
-    r = subprocess.run(["java", "-Xss64m", "-cp", BUILD, "Main", out_json] + topics, capture_output=True, text=True, encoding="utf-8")
+    r = subprocess.run(["java", "-Dalgoscope.deep=true", "-Xss64m", "-Xmx3g", "-cp", BUILD, "Main", out_json] + topics, capture_output=True, text=True, encoding="utf-8")
     print(r.stdout.strip());
     if r.returncode:
         print(r.stderr); sys.exit(1)
@@ -219,15 +293,21 @@ def main():
             "complexity": p.get("complexity", {}), "intuition": p.get("intuition", []), "pitfalls": p.get("pitfalls", []),
             "input": p.get("input", ""), "output": p.get("output", ""), "capped": p.get("capped", False),
             "code": reg["code"], "marker": p["marker"],
-            "steps": fix_steps(p.get("steps", []), reg, p["file"], warn, s["name"]),
             "edgeCases": [],
         }
+        steps, capped, calls = deep_steps(p.get("steps", []), p.get("calls"), reg, p["file"], warn, s["name"], "main")
+        rec["steps"], rec["capped"] = steps, rec["capped"] or capped
+        if calls: rec["calls"] = calls
         for e in p["edgeCases"]:
             e2 = {k: e[k] for k in ("name", "input", "expected", "actual", "status", "why", "capped")}
-            e2["steps"] = fix_steps(e["steps"], reg, p["file"], warn, s["name"] + " / " + e["name"])
+            steps, capped, calls = deep_steps(e["steps"], e.get("calls"), reg, p["file"], warn, s["name"] + " / " + e["name"], "edge")
+            e2["steps"], e2["capped"] = steps, e2["capped"] or capped
+            if calls: e2["calls"] = calls
             rec["edgeCases"].append(e2)
         attach_alt(rec, warn)
         rec.pop("marker")
+        rec["steps"] = deepen.encode(rec["steps"])
+        for e2 in rec["edgeCases"]: e2["steps"] = deepen.encode(e2["steps"])
         groups.setdefault(slug(s["topic"]), []).append(rec)
     for g, recs in groups.items():
         path = os.path.join(DATA, g + ".json")
@@ -253,6 +333,7 @@ def main():
     total = sum(os.path.getsize(os.path.join(DATA, f)) for f in os.listdir(DATA))
     print(f"built {sum(len(v) for v in groups.values())} problems this run; {len(have)}/{len(sheet)} available; data {total/1e6:.2f} MB")
     for w in warn: print("WARN", w)
+    for lang, n in ALT_GAPS.items(): print(f"note: {n} Java lines have no {lang} tag and use the nearest earlier tagged line")
 
 
 if __name__ == "__main__":
