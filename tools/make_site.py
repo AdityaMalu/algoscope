@@ -34,6 +34,7 @@ def csp(html):
 
 
 SITE = make_pages.SITE
+BAR = '<script src="assets/layoffprep-bar.js" data-tool="algo" defer></script>\n'  # links to the layoffprep hub and the other tools
 DESC = "Step-by-step animated traces of 159 DSA interview problems in Java, Python and C++. Paste your own Python and watch it run."
 FOOT = ('<footer class="site-foot"><a href="problems/">All 159 problems as plain pages</a> · '
         '<a href="https://github.com/AdityaMalu/algoscope">Source on GitHub</a> · MIT license</footer>\n')
@@ -57,7 +58,7 @@ def build_index():
         "<link rel=\"icon\" href=\"assets/icon.svg\" type=\"image/svg+xml\">\n"
         "<style>html,body{margin:0}body{font:14px system-ui,-apple-system,'Segoe UI',sans-serif}"
         ".site-foot{max-width:1360px;margin:0 auto;padding:0 20px 32px;font-size:13px;color:var(--ink-3)}.site-foot a{color:inherit}</style>\n"
-        + head + "</head>\n<body>\n" + body + "\n" + FOOT + "</body>\n</html>\n"
+        + head + "</head>\n<body>\n" + body + "\n" + FOOT + BAR + "</body>\n</html>\n"
     )
 
 
